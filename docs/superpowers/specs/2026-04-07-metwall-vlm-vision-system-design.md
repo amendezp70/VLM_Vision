@@ -49,19 +49,22 @@ One PC serves both Modula units over the local network.
 - No GPU required (ONNX CPU inference is sufficient at 5–10 fps)
 - Windows 10/11 or Ubuntu 22.04
 
-### 3.2 Cloud (FastAPI backend + React dashboard)
+### 3.2 Cloud (Zoho Catalyst)
 
-Deployed on AWS or Google Cloud Run (containerized, auto-scaling).
+Deployed on Zoho Catalyst — the same platform as the existing Metwall Catalyst project. Native Zoho authentication and Inventory integration; no separate OAuth setup required.
 
 **Components:**
 
-| Component | Responsibility |
-|---|---|
-| Model Registry | Stores versioned ONNX models; pushes updates to local PC on new release |
-| Training Pipeline | Accepts uploaded part images; runs YOLOv8 fine-tuning; validates mAP; promotes model on pass |
-| Zoho Sync Service | Converts confirmed picks to Zoho Inventory API calls; handles retries and conflict resolution |
-| Alert Service | Fires wrong-pick and short-pick notifications via email or Zoho Cliq webhook |
-| Admin Dashboard | React web app for pick history, per-SKU detection accuracy, worker performance, and inventory levels |
+| Component | Catalyst Service | Responsibility |
+|---|---|---|
+| Model Registry | File Store | Stores versioned ONNX models; local PC polls for updates on startup and hourly |
+| Zoho Sync Service | Functions (Python) | Converts confirmed picks to Zoho Inventory API calls; handles retries and conflict resolution |
+| Alert Service | Functions (Python) + Cron | Fires wrong-pick and short-pick notifications via Zoho Cliq webhook or email |
+| Pick History / Audit Log | Datastore | Stores every pick event (SKU, worker, bay, timestamp, result) queryable via ZCQL |
+| Admin Dashboard | Web Hosting (React) | Pick history, per-SKU detection accuracy, worker performance, inventory levels |
+| Scheduled Sync | Cron | Periodic reconciliation between local SQLite queue and Zoho Inventory |
+
+**Note on model training:** YOLOv8 training is GPU-intensive and unsuitable for Catalyst serverless functions. Training runs externally on Roboflow (managed GPU cloud). Roboflow exports the validated ONNX model, which is then uploaded to Catalyst File Store for distribution to the local PC.
 
 ### 3.3 Hardware per Bay
 
@@ -153,14 +156,15 @@ Browser-based overlay running full-screen on the Modula bay's existing PC screen
 | Object detection | YOLOv8n (Ultralytics), ONNX Runtime |
 | Local app framework | FastAPI (WebSocket server) |
 | Local data store | SQLite (offline queue) |
-| Cloud API | FastAPI on Cloud Run (containerized) |
-| Cloud database | PostgreSQL (pick history, audit log) |
-| Admin dashboard | React 18, Tailwind CSS |
-| Model training | Ultralytics YOLOv8, Roboflow |
-| Model storage | AWS S3 or GCS bucket |
-| Zoho integration | Zoho Inventory REST API v1, OAuth 2.0 |
-| Alerts | Zoho Cliq webhook or SMTP |
-| Deployment | Docker Compose (local), Cloud Run (cloud) |
+| Cloud functions | Zoho Catalyst Functions (Python) |
+| Cloud database | Zoho Catalyst Datastore (ZCQL) |
+| Model storage | Zoho Catalyst File Store |
+| Admin dashboard | React 18, Tailwind CSS (Catalyst Web Hosting) |
+| Scheduled jobs | Zoho Catalyst Cron |
+| Model training | Roboflow (external GPU cloud, exports ONNX) |
+| Zoho integration | Zoho Inventory REST API v1, Catalyst native OAuth |
+| Alerts | Zoho Cliq webhook |
+| Deployment | Docker Compose (local PC), Zoho Catalyst (cloud) |
 
 ---
 
@@ -176,7 +180,7 @@ Browser-based overlay running full-screen on the Modula bay's existing PC screen
 
 ## 10. Open Questions
 
-- Which cloud provider does Metwall prefer (AWS, GCP, Azure)?
+- ~~Which cloud provider does Metwall prefer?~~ Resolved: Zoho Catalyst
 - Does the Modula WMS support webhooks or only polling for pick orders?
 - What is Metwall's internet connection reliability at the facility?
 - Who manages the Admin Dashboard and model retraining (internal IT or vendor)?
