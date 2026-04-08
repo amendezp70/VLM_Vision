@@ -87,10 +87,13 @@ describe("datastore service", () => {
     expect(events[0].order_id).toBe("PO-001");
   });
 
-  test("getPickStats returns count", async () => {
+  test("getPickStats returns breakdown by result", async () => {
     const catalystApp = mockCatalystApp();
     const stats = await getPickStats(catalystApp);
 
     expect(stats.total).toBe(42);
+    expect(stats.correct).toBeDefined();
+    expect(stats.wrong).toBeDefined();
+    expect(stats.short).toBeDefined();
   });
 });

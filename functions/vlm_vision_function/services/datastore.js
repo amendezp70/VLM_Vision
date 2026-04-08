@@ -33,8 +33,22 @@ export async function getPickEvents(catalystApp, { limit = 50, result = null } =
 
 export async function getPickStats(catalystApp) {
   const zcql = catalystApp.zcql();
-  const rows = await zcql.executeZCQLQuery(
+  const totalRows = await zcql.executeZCQLQuery(
     "SELECT COUNT(ROWID) AS count FROM pick_events"
   );
-  return { total: rows[0]?.pick_events?.count ?? 0 };
+  const correctRows = await zcql.executeZCQLQuery(
+    "SELECT COUNT(ROWID) AS count FROM pick_events WHERE result = 'correct'"
+  );
+  const wrongRows = await zcql.executeZCQLQuery(
+    "SELECT COUNT(ROWID) AS count FROM pick_events WHERE result = 'wrong'"
+  );
+  const shortRows = await zcql.executeZCQLQuery(
+    "SELECT COUNT(ROWID) AS count FROM pick_events WHERE result = 'short'"
+  );
+  return {
+    total: totalRows[0]?.pick_events?.count ?? 0,
+    correct: correctRows[0]?.pick_events?.count ?? 0,
+    wrong: wrongRows[0]?.pick_events?.count ?? 0,
+    short: shortRows[0]?.pick_events?.count ?? 0,
+  };
 }
