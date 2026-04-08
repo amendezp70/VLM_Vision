@@ -1,6 +1,6 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
-from typing import Tuple
+from typing import Literal, Tuple
 
 
 class BayStatus(Enum):
@@ -32,6 +32,6 @@ class PickEvent:
     qty_picked: int
     bay_id: int
     worker_id: str
-    result: str  # "correct" | "wrong" | "short"
-    timestamp: float
+    result: Literal["correct", "wrong", "short"]
+    timestamp: float  # POSIX epoch seconds (time.time())
     synced: bool = False
