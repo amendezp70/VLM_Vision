@@ -1,0 +1,26 @@
+/* client/vlm-admin.css — custom styles beyond Tailwind */
+
+/* Smooth tab transitions */
+button { transition: all 0.15s ease; }
+
+/* Table row hover */
+tbody tr { transition: background-color 0.1s ease; }
+
+/* Pulse animation for status dot */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+.animate-pulse { animation: pulse-dot 2s ease-in-out infinite; }
+
+/* Scrollbar styling */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #111; }
+::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #555; }
+
+/* Badge styles for dynamic Tailwind colors that CDN may purge */
+.text-blue-400 { color: #60a5fa; }
+.text-green-400 { color: #4ade80; }
+.text-red-400 { color: #f87171; }
+.text-yellow-400 { color: #facc15; }
