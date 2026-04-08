@@ -12,7 +12,7 @@ import uvicorn
 from local_agent.camera_agent import CameraAgent
 from local_agent.config import Config
 from local_agent.detector import Detector
-from local_agent.display_server import app, broadcast
+from local_agent.display_server import app, broadcast, update_frame
 from local_agent.models import BayStatus, PickOrder
 from local_agent.modula_client import ModulaClient
 from local_agent.offline_queue import OfflineQueue
@@ -51,6 +51,7 @@ def run_bay(
 
         frame = frame_queue.get()
         detections = detector.detect(frame)
+        update_frame(bay_id, frame)   # keep MJPEG feed current
 
         status = BayStatus.ACTIVE if active_order else BayStatus.WAITING
         asyncio.run_coroutine_threadsafe(
@@ -76,7 +77,7 @@ def run_bay(
                 except Exception:
                     pass  # queued locally; cloud sync handles retry
                 asyncio.run_coroutine_threadsafe(
-                    broadcast(bay_id, BayStatus.CONFIRMING, after, None), loop
+                    broadcast(bay_id, BayStatus.CONFIRMING, after, None, result=event.result), loop
                 )
                 active_order = None
 
