@@ -3,8 +3,15 @@ import { jest } from "@jest/globals";
 
 // Mock datastore before importing route
 const mockInsert = jest.fn(async () => ({ ROWID: "1" }));
+const mockGetEvents = jest.fn(async () => [
+  { order_id: "PO-001", sku: "STL-P-100-BK", result: "correct", bay_id: 1, worker_id: "jmartinez", timestamp: 1712500000, qty_picked: 1 },
+]);
+const mockGetStats = jest.fn(async () => ({ total: 42, correct: 38, wrong: 3, short: 1 }));
+
 jest.unstable_mockModule("../services/datastore.js", () => ({
   insertPickEvent: mockInsert,
+  getPickEvents: mockGetEvents,
+  getPickStats: mockGetStats,
 }));
 
 const { default: buildPicksRouter } = await import("../routes/picks.js");
@@ -56,5 +63,26 @@ describe("POST /picks/sync", () => {
       .send({ events: [] })
       .set("Content-Type", "application/json");
     expect(res.status).toBe(400);
+  });
+});
+
+describe("GET /picks/history", () => {
+  test("returns pick events", async () => {
+    const app = makeApp();
+    const res = await request(app).get("/picks/history?limit=10");
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body.events)).toBe(true);
+    expect(res.body.events.length).toBe(1);
+    expect(res.body.events[0].order_id).toBe("PO-001");
+  });
+});
+
+describe("GET /picks/stats", () => {
+  test("returns aggregate stats", async () => {
+    const app = makeApp();
+    const res = await request(app).get("/picks/stats");
+    expect(res.status).toBe(200);
+    expect(res.body.total).toBe(42);
+    expect(res.body.correct).toBe(38);
   });
 });
