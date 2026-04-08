@@ -14,9 +14,12 @@ from local_agent.config import Config
 from local_agent.detector import Detector
 from local_agent.display_server import app, broadcast, update_frame
 from local_agent.models import BayStatus, PickOrder
+from local_agent.cloud_sync_client import CloudSyncClient
+from local_agent.model_registry import ModelRegistry
 from local_agent.modula_client import ModulaClient
 from local_agent.offline_queue import OfflineQueue
 from local_agent.pick_verifier import PickVerifier
+from local_agent.sync_worker import SyncWorker
 
 FRAME_QUEUE_SIZE = 3
 PICK_SETTLE_SECONDS = 1.5  # wait after motion stops before comparing before/after
@@ -87,6 +90,28 @@ def main():
     detector = Detector(model_path=config.model_path)
     modula = ModulaClient(base_url=config.modula_wms_url)
     queue = OfflineQueue(db_path=config.db_path)
+
+    # Cloud sync setup
+    cloud_client = CloudSyncClient(base_url=config.cloud_sync_url)
+    model_registry = ModelRegistry(
+        cloud_client=cloud_client,
+        model_dir=config.model_dir,
+        current_model_path=config.model_path,
+    )
+
+    def on_model_updated(new_path: str):
+        nonlocal detector
+        detector = Detector(model_path=new_path)
+
+    sync_worker = SyncWorker(
+        queue=queue,
+        cloud_client=cloud_client,
+        model_registry=model_registry,
+        sync_interval=config.sync_interval_sec,
+        model_poll_interval=config.model_poll_interval_sec,
+        on_model_updated=on_model_updated,
+    )
+    sync_worker.start()
 
     loop = asyncio.new_event_loop()
 
