@@ -12,6 +12,9 @@ class Config:
     detection_fps: int = 10
     websocket_port: int = 8765
     db_path: str = "picks.db"
+    model_dir: str = "models"
+    sync_interval_sec: int = 30
+    model_poll_interval_sec: int = 3600
 
     @classmethod
     def from_env(cls) -> "Config":
@@ -26,4 +29,7 @@ class Config:
             detection_fps=int(os.environ.get("DETECTION_FPS", "10")),
             websocket_port=int(os.environ.get("WEBSOCKET_PORT", "8765")),
             db_path=os.environ.get("DB_PATH", "picks.db"),
+            model_dir=os.environ.get("MODEL_DIR", "models"),
+            sync_interval_sec=int(os.environ.get("SYNC_INTERVAL_SEC", "30")),
+            model_poll_interval_sec=int(os.environ.get("MODEL_POLL_INTERVAL_SEC", "3600")),
         )

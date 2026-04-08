@@ -36,3 +36,6 @@ def test_config_defaults():
     assert c.camera_ids == [0, 1]
     assert c.modula_wms_url == "http://modula-wms.local:8080"
     assert c.detection_fps == 10
+    assert c.model_dir == "models"
+    assert c.sync_interval_sec == 30
+    assert c.model_poll_interval_sec == 3600
