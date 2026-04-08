@@ -4,7 +4,6 @@ FastAPI WebSocket server. Each bay has its own endpoint.
 The main loop calls broadcast() to push detection state to connected overlay clients.
 """
 import json
-import asyncio
 from typing import Dict, List, Set, Optional
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from local_agent.models import Detection, PickOrder, BayStatus
