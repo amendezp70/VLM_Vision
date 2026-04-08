@@ -1,0 +1,16 @@
+{
+  "deployment": {
+    "name": "vlm_vision_function",
+    "stack": "node20",
+    "type": "advancedio",
+    "env_variables": {
+      "ZOHO_INVENTORY_ORG_ID": "",
+      "ZOHO_CLIQ_WEBHOOK_URL": "",
+      "MODEL_CURRENT_VERSION": "v1",
+      "MODEL_DOWNLOAD_URL": ""
+    }
+  },
+  "execution": {
+    "main": "index.js"
+  }
+}

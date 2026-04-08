@@ -1,7 +1,8 @@
 {
   "functions": {
     "targets": [
-      "email_ai_assistant_function"
+      "email_ai_assistant_function",
+      "vlm_vision_function"
     ],
     "ignore": [],
     "source": "functions"
