@@ -1,0 +1,68 @@
+<!-- vlm_vision/overlay/bay.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VLM Pick Bay</title>
+  <link rel="stylesheet" href="bay.css">
+</head>
+<body>
+  <div id="app" class="state-waiting">
+
+    <!-- Top bar -->
+    <div id="top-bar">
+      <span id="bay-label">BAY —</span>
+      <span id="worker-label">Operator</span>
+      <span id="live-dot" class="dot-offline">● CONNECTING</span>
+    </div>
+
+    <!-- Camera + canvas overlay -->
+    <div id="camera-wrap">
+      <img id="video-feed" alt="camera feed">
+      <canvas id="overlay-canvas"></canvas>
+
+      <!-- Waiting spinner -->
+      <div id="waiting-msg">
+        <div class="spinner"></div>
+        <p>Waiting for tray…</p>
+      </div>
+
+      <!-- State flash overlays -->
+      <div id="correct-flash">
+        <span class="flash-icon">✓</span>
+        <span class="flash-text">Correct Part!</span>
+      </div>
+      <div id="wrong-flash">
+        <span class="flash-icon">✗</span>
+        <span class="flash-text">Wrong Part!</span>
+        <span class="flash-sub" id="wrong-detail"></span>
+      </div>
+    </div>
+
+    <!-- Pick order bar -->
+    <div id="order-bar">
+      <div id="order-left">
+        <div id="order-id-label">—</div>
+        <div id="sku-display">—</div>
+        <div id="sku-desc">Waiting for order</div>
+      </div>
+      <div id="order-right">
+        <div class="bar-label">QTY NEEDED</div>
+        <div id="qty-display">—</div>
+      </div>
+    </div>
+
+    <!-- Status bar -->
+    <div id="status-bar">
+      <span id="pick-timer">00:00</span>
+      <span class="sep">|</span>
+      <span id="last-result">—</span>
+      <span class="sep">|</span>
+      <span id="ws-status">Connecting…</span>
+    </div>
+
+  </div>
+  <script src="bay.js"></script>
+</body>
+</html>
