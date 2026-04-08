@@ -1,4 +1,6 @@
+import os
 from local_agent.models import Detection, PickOrder, PickEvent, BayStatus
+from local_agent.config import Config
 
 def test_detection_fields():
     d = Detection(sku="STL-P-100-BK", color="black", confidence=0.97,
@@ -22,3 +24,15 @@ def test_pick_event_result_values():
 def test_bay_status_values():
     assert BayStatus.WAITING != BayStatus.ACTIVE
     assert BayStatus.ACTIVE != BayStatus.CONFIRMING
+
+def test_config_defaults():
+    os.environ.setdefault("MODEL_PATH", "models/metwall.onnx")
+    os.environ.setdefault("CAMERA_BAY1", "0")
+    os.environ.setdefault("CAMERA_BAY2", "1")
+    os.environ.setdefault("MODULA_WMS_URL", "http://modula-wms.local:8080")
+    os.environ.setdefault("CLOUD_SYNC_URL", "https://catalyst.zoho.com/baas/v1/project/123")
+    c = Config.from_env()
+    assert c.model_path == "models/metwall.onnx"
+    assert c.camera_ids == [0, 1]
+    assert c.modula_wms_url == "http://modula-wms.local:8080"
+    assert c.detection_fps == 10
