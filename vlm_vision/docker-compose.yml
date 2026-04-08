@@ -1,0 +1,16 @@
+version: "3.9"
+
+services:
+  vlm-agent:
+    build: .
+    restart: unless-stopped
+    devices:
+      - /dev/video0:/dev/video0   # Bay 1 camera
+      - /dev/video1:/dev/video1   # Bay 2 camera
+    volumes:
+      - ./models:/app/models      # ONNX model files
+      - ./data:/app/data          # SQLite offline queue
+    ports:
+      - "8765:8765"               # WebSocket for display overlay
+    env_file:
+      - .env
