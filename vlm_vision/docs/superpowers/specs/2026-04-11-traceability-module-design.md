@@ -59,17 +59,126 @@ Extends the existing Catalyst deployment:
 - **File Store:** Video segment storage (5-min MP4 files), evidence clip storage
 - **Admin Dashboard:** 3 new tabs (Traceability Search, Live Zones, Video Archive)
 
-## 3. Camera Zones
+## 3. Camera Zones (Configurable)
 
-Five zones in a linear flow from packing to truck loading. One camera per zone minimum, configurable per installation.
+Zones are fully configurable — add, remove, or reorder them to match any manufacturing process. Each installation defines its own flow via a `zones.json` config file. The system ships with a library of **zone types** that can be composed into any sequence.
 
-| Zone | Name | Camera Purpose | AI Models | Events |
-|------|------|---------------|-----------|--------|
-| 1 | Packing Station | Capture box contents + barcode application | metwall.onnx, box_state.onnx | box_packed, content_detected, barcode_applied |
-| 2 | Conveyor Scan | Barcode reading + dual verification | barcode.onnx + pyzbar + USB scanner | barcode_scanned, barcode_camera_read, barcode_match/mismatch |
-| 3 | Box Sealing | Confirm box is sealed | box_state.onnx | box_sealed, seal_verified |
-| 4 | Pallet Assembly | Track boxes placed on pallets | pallet.onnx | pallet_started, box_placed_on_pallet, pallet_completed |
-| 5 | Truck Loading | Confirm pallet loaded + departure | pallet.onnx | pallet_loaded, shipment_departed |
+### 3.1 Zone Types (Built-in Library)
+
+Each zone type defines its capabilities: which AI models it loads, what events it generates, and what hardware it supports.
+
+| Zone Type | Purpose | AI Models | Events | Hardware |
+|-----------|---------|-----------|--------|----------|
+| `vlm_pick` | Modula VLM bay pick verification | metwall.onnx | pick_correct, pick_wrong, pick_short | Bay camera |
+| `packing` | Box packing + content verification | metwall.onnx, box_state.onnx | box_packed, content_detected, barcode_applied | Camera |
+| `barcode_scan` | Barcode reading + dual verification | barcode.onnx + pyzbar | barcode_scanned, barcode_camera_read, barcode_match/mismatch | Camera + USB scanner (optional) |
+| `sealing` | Confirm box is sealed/taped | box_state.onnx | box_sealed, seal_verified | Camera |
+| `crating` | Crating/special packaging verification | box_state.onnx | crate_packed, crate_sealed | Camera |
+| `quality_check` | Visual quality inspection checkpoint | (custom model) | qc_passed, qc_failed, qc_flagged | Camera |
+| `pallet_assembly` | Track boxes placed on pallets | pallet.onnx | pallet_started, box_placed_on_pallet, pallet_completed | Camera |
+| `staging` | Staging area / holding before loading | pallet.onnx | pallet_staged, pallet_released | Camera |
+| `truck_loading` | Confirm pallet loaded + departure | pallet.onnx | pallet_loaded, shipment_departed | Camera |
+| `custom` | User-defined zone with custom events | (configurable) | (configurable) | Camera |
+
+### 3.2 Zone Configuration (zones.json)
+
+Each installation defines its flow as an ordered list of zones:
+
+```json
+{
+  "zones": [
+    {
+      "zone_id": 1,
+      "name": "VLM Bay Pick",
+      "type": "vlm_pick",
+      "cameras": [0, 1],
+      "enabled": true,
+      "models": ["metwall.onnx"],
+      "scanner": null
+    },
+    {
+      "zone_id": 2,
+      "name": "Packing Station",
+      "type": "packing",
+      "cameras": [2],
+      "enabled": true,
+      "models": ["metwall.onnx", "box_state.onnx"],
+      "scanner": null
+    },
+    {
+      "zone_id": 3,
+      "name": "Conveyor Scan",
+      "type": "barcode_scan",
+      "cameras": [3],
+      "enabled": true,
+      "models": ["barcode.onnx"],
+      "scanner": "/dev/ttyUSB0"
+    },
+    {
+      "zone_id": 4,
+      "name": "Box Sealing",
+      "type": "sealing",
+      "cameras": [4],
+      "enabled": true,
+      "models": ["box_state.onnx"],
+      "scanner": null
+    },
+    {
+      "zone_id": 5,
+      "name": "Pallet Assembly",
+      "type": "pallet_assembly",
+      "cameras": [5],
+      "enabled": true,
+      "models": ["pallet.onnx"],
+      "scanner": null
+    },
+    {
+      "zone_id": 6,
+      "name": "Truck Loading",
+      "type": "truck_loading",
+      "cameras": [6],
+      "enabled": true,
+      "models": ["pallet.onnx"],
+      "scanner": null
+    }
+  ]
+}
+```
+
+### 3.3 Example Configurations
+
+**Metwall Full Flow (6 zones):**
+`vlm_pick → packing → barcode_scan → sealing → pallet_assembly → truck_loading`
+
+**Simple Warehouse (3 zones):**
+`packing → barcode_scan → truck_loading`
+
+**With Crating (7 zones):**
+`vlm_pick → packing → crating → barcode_scan → sealing → pallet_assembly → truck_loading`
+
+**Quality-Critical (5 zones):**
+`packing → quality_check → barcode_scan → pallet_assembly → truck_loading`
+
+### 3.4 Metwall Default Configuration
+
+The default `zones.json` ships with this flow:
+
+| Order | Zone Type | Name | Cameras | Scanner |
+|-------|-----------|------|---------|---------|
+| 1 | vlm_pick | VLM Bay Pick | Bay cameras (0, 1) | — |
+| 2 | packing | Packing Station | Camera 2 | — |
+| 3 | barcode_scan | Conveyor Scan | Camera 3 | USB scanner |
+| 4 | sealing | Box Sealing | Camera 4 | — |
+| 5 | pallet_assembly | Pallet Assembly | Camera 5 | — |
+| 6 | truck_loading | Truck Loading | Camera 6 | — |
+
+### 3.5 Dynamic Zone Management
+
+- Zones can be enabled/disabled without restarting (hot-config via admin dashboard)
+- New zone types can be added by creating a ZoneType plugin (Python class implementing the ZoneHandler interface)
+- Zone order defines the expected flow — events are validated against the sequence
+- A zone can have multiple cameras (e.g., pallet assembly might use 2 angles)
+- Custom event types can be defined per zone for non-standard processes
 
 ## 4. Data Model
 
@@ -115,13 +224,22 @@ ZoneEvent (N) → (1) VideoSegment
 ZoneEvent (1) → (0..1) EvidenceClip
 ```
 
-### 4.3 Event Types
+### 4.3 Event Types (by Zone Type)
 
-- **Zone 1:** box_packed, barcode_applied, content_detected
-- **Zone 2:** barcode_scanned, barcode_camera_read, barcode_match, barcode_mismatch
-- **Zone 3:** box_sealed, seal_verified
-- **Zone 4:** pallet_started, box_placed_on_pallet, pallet_completed
-- **Zone 5:** pallet_loaded, shipment_departed
+Event types are defined per zone type, not per zone number. This allows any configuration to generate the correct events.
+
+| Zone Type | Event Types |
+|-----------|-------------|
+| vlm_pick | pick_correct, pick_wrong, pick_short |
+| packing | box_packed, content_detected, barcode_applied |
+| barcode_scan | barcode_scanned, barcode_camera_read, barcode_match, barcode_mismatch |
+| sealing | box_sealed, seal_verified |
+| crating | crate_packed, crate_sealed |
+| quality_check | qc_passed, qc_failed, qc_flagged |
+| pallet_assembly | pallet_started, box_placed_on_pallet, pallet_completed |
+| staging | pallet_staged, pallet_released |
+| truck_loading | pallet_loaded, shipment_departed |
+| custom | (user-defined) |
 
 ### 4.4 Search Indexes
 
@@ -132,7 +250,7 @@ ZoneEvent (1) → (0..1) EvidenceClip
 
 ## 5. Barcode Dual Verification
 
-Zone 2 performs dual verification using two independent reads:
+Any zone of type `barcode_scan` performs dual verification using two independent reads:
 
 1. **Camera path:** Frame → YOLO barcode detection (barcode.onnx) → crop region → pyzbar decode → `barcode_camera` value
 2. **Scanner path:** USB/serial barcode scanner → HID input → timestamp → `barcode_scanner` value
@@ -199,10 +317,10 @@ Four ONNX models, all YOLOv8n architecture, trained via Roboflow:
 
 | Model | Classes | Zones | Training Images | Difficulty |
 |-------|---------|-------|----------------|------------|
-| metwall.onnx | 150 SKU classes (SKU__color) | Zone 1 | Already trained | Done |
-| barcode.onnx | barcode, qr_code, label | Zone 2 | ~500 | Easy |
-| box_state.onnx | box_open, box_sealed, box_taped, box_labeled | Zones 1, 3 | ~800 | Medium |
-| pallet.onnx | pallet_empty, pallet_partial, pallet_full, box_on_pallet, forklift, truck_bay | Zones 4, 5 | ~1,000 | Medium |
+| metwall.onnx | 150 SKU classes (SKU__color) | vlm_pick, packing | Already trained | Done |
+| barcode.onnx | barcode, qr_code, label | barcode_scan | ~500 | Easy |
+| box_state.onnx | box_open, box_sealed, box_taped, box_labeled | packing, sealing, crating | ~800 | Medium |
+| pallet.onnx | pallet_empty, pallet_partial, pallet_full, box_on_pallet, forklift, truck_bay | pallet_assembly, staging, truck_loading | ~1,000 | Medium |
 
 **Model management:**
 - All models use existing ModelRegistry + hot-swap pattern
@@ -218,7 +336,7 @@ Three new tabs added to the existing VLM admin dashboard:
 
 - Search bar: barcode, pallet ID, order/shipment number, date range
 - Filter by type (barcode/pallet/shipment)
-- Results table: barcode, SKU, pallet, shipment, zones passed (N/5), barcode match status, date, actions
+- Results table: barcode, SKU, pallet, shipment, zones passed (N/total configured), barcode match status, date, actions
 - Mismatches highlighted in red
 - Actions: "Timeline" link → timeline view, "Clips" link → evidence playback
 
@@ -226,15 +344,15 @@ Three new tabs added to the existing VLM admin dashboard:
 
 - Activated by clicking "Timeline" from search results
 - Header: box ID, SKU, pallet, shipment
-- Visual vertical timeline showing journey through all 5 zones
+- Visual vertical timeline showing journey through all configured zones
 - Each zone shows: timestamp, event details, confidence scores
 - Clickable "Play Clip" button per zone → plays ±30s evidence clip in-browser
 - Color-coded by zone (blue, green, orange, red, purple)
 
 ### 8.3 Live Zones
 
-- Grid of 5 zone cards with real-time MJPEG camera feeds
-- Each card shows: zone name, camera feed, current box/pallet info, status (Active/Waiting/Loading)
+- Dynamic grid of zone cards (adapts to configured zone count) with real-time MJPEG camera feeds
+- Each card shows: zone name, type, camera feed, current box/pallet info, status (Active/Waiting/Loading)
 - Same WebSocket pattern as existing bay overlay but multi-zone
 
 ### 8.4 Video Archive
@@ -246,23 +364,18 @@ Three new tabs added to the existing VLM admin dashboard:
 
 ## 9. Configuration
 
-New environment variables (added to existing .env):
+Two config files: `.env` for global settings, `zones.json` for zone flow definition.
+
+**zones.json** — see Section 3.2 for full format. Defines zone order, types, cameras, models, and scanners per installation.
+
+**New environment variables** (added to existing .env):
 
 ```env
 # Traceability Module
 TRACEABILITY_ENABLED=true
-ZONE_COUNT=5
+ZONES_CONFIG_PATH=zones.json
 
-# Zone cameras (one per zone)
-CAMERA_ZONE1=2
-CAMERA_ZONE2=3
-CAMERA_ZONE3=4
-CAMERA_ZONE4=5
-CAMERA_ZONE5=6
-
-# Barcode scanner
-BARCODE_SCANNER_PORT=/dev/ttyUSB0
-BARCODE_SCANNER_ENABLED=true
+# Barcode scanner defaults (overridden per-zone in zones.json)
 BARCODE_MATCH_WINDOW_SEC=5
 
 # Video recording
@@ -314,6 +427,7 @@ Added to existing Express app in `/functions/vlm_vision_function/`:
 
 ```
 vlm_vision/
+├── zones.json                   # Zone flow config (per installation)
 ├── local_agent/
 │   ├── core/                    # Shared core (refactored from existing)
 │   │   ├── camera_agent.py
@@ -332,7 +446,19 @@ vlm_vision/
 │   │   └── sync_worker.py
 │   ├── traceability/            # Process 2 — new traceability agent
 │   │   ├── main.py
-│   │   ├── zone_manager.py
+│   │   ├── zone_manager.py       # Loads zones.json, orchestrates zone handlers
+│   │   ├── zone_handler.py       # Base ZoneHandler interface
+│   │   ├── zone_types/           # Zone type plugins
+│   │   │   ├── vlm_pick.py
+│   │   │   ├── packing.py
+│   │   │   ├── barcode_scan.py
+│   │   │   ├── sealing.py
+│   │   │   ├── crating.py
+│   │   │   ├── quality_check.py
+│   │   │   ├── pallet_assembly.py
+│   │   │   ├── staging.py
+│   │   │   ├── truck_loading.py
+│   │   │   └── custom.py
 │   │   ├── barcode_reader.py
 │   │   ├── pallet_tracker.py
 │   │   ├── event_correlator.py

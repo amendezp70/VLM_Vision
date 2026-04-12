@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VLM Vision — Traceability Module Design Spec</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --primary: #1a56db;
+    --primary-light: #e8effc;
+    --dark: #111827;
+    --gray-800: #1f2937;
+    --gray-600: #4b5563;
+    --gray-400: #9ca3af;
+    --gray-200: #e5e7eb;
+    --gray-100: #f3f4f6;
+    --green: #059669;
+    --red: #dc2626;
+    --yellow: #d97706;
+    --purple: #7c3aed;
+    --cyan: #0891b2;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    color: var(--dark);
+    line-height: 1.7;
+    font-size: 14px;
+    background: #fff;
+  }
+
+  @media print {
+    body { font-size: 11pt; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+    .no-print { display: none !important; }
+    .page-break { page-break-before: always; }
+    h2 { page-break-after: avoid; }
+    table { page-break-inside: avoid; }
+    a { color: var(--dark); text-decoration: none; }
+    .cover { -webkit-print-color-adjust: exact !important; }
+    th { -webkit-print-color-adjust: exact !important; }
+    .process-card, .zone-box, .entity-box { -webkit-print-color-adjust: exact !important; }
+    .callout { -webkit-print-color-adjust: exact !important; }
+    .arch-box { -webkit-print-color-adjust: exact !important; }
+    tr:nth-child(even) td { -webkit-print-color-adjust: exact !important; }
+    code { -webkit-print-color-adjust: exact !important; }
+    pre { -webkit-print-color-adjust: exact !important; }
+  }
+
+  .cover {
+    background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #1a56db 100%);
+    color: white;
+    padding: 80px 60px;
+    min-height: 50vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .cover h1 { font-size: 34px; font-weight: 700; margin-bottom: 12px; }
+  .cover .subtitle { font-size: 19px; font-weight: 400; opacity: 0.85; margin-bottom: 40px; }
+  .cover .meta { font-size: 13px; opacity: 0.6; line-height: 2; }
+  .cover .meta strong { opacity: 1; }
+
+  .download-bar {
+    position: fixed; top: 0; left: 0; right: 0;
+    background: var(--dark); padding: 10px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+  .download-bar span { color: white; font-size: 13px; font-weight: 500; }
+  .download-btn {
+    background: var(--primary); color: white; border: none;
+    padding: 8px 20px; border-radius: 6px; font-size: 13px;
+    font-weight: 600; cursor: pointer; transition: background 0.2s;
+  }
+  .download-btn:hover { background: #1e40af; }
+  body { padding-top: 50px; }
+
+  .content { max-width: 820px; margin: 0 auto; padding: 40px 32px; }
+
+  h2 {
+    font-size: 22px; font-weight: 700; color: var(--dark);
+    border-bottom: 3px solid var(--primary);
+    padding-bottom: 8px; margin: 48px 0 20px;
+  }
+  h3 { font-size: 17px; font-weight: 600; margin: 28px 0 12px; color: var(--gray-800); }
+  h4 { font-size: 14px; font-weight: 600; margin: 20px 0 8px; color: var(--gray-600); }
+
+  p { margin-bottom: 14px; }
+  ul, ol { margin: 0 0 16px 24px; }
+  li { margin-bottom: 6px; }
+
+  .toc {
+    background: var(--gray-100); border: 1px solid var(--gray-200);
+    border-radius: 8px; padding: 24px 32px; margin: 32px 0;
+  }
+  .toc h3 { margin-top: 0; color: var(--dark); }
+  .toc ol { list-style: none; counter-reset: toc; margin: 0; padding: 0; }
+  .toc > ol > li { counter-increment: toc; margin-bottom: 6px; }
+  .toc > ol > li::before { content: counter(toc) "."; font-weight: 600; color: var(--primary); margin-right: 8px; }
+  .toc a { color: var(--dark); text-decoration: none; }
+  .toc a:hover { color: var(--primary); }
+
+  table {
+    width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13px;
+  }
+  th {
+    background: var(--gray-800); color: white;
+    padding: 10px 14px; text-align: left; font-weight: 600;
+  }
+  td { padding: 10px 14px; border-bottom: 1px solid var(--gray-200); }
+  tr:nth-child(even) td { background: var(--gray-100); }
+
+  .callout {
+    border-radius: 6px; padding: 14px 18px; margin: 16px 0; font-size: 13px;
+  }
+  .callout-info { background: var(--primary-light); border-left: 4px solid var(--primary); }
+  .callout-success { background: #d1fae5; border-left: 4px solid var(--green); }
+  .callout-warning { background: #fef3c7; border-left: 4px solid var(--yellow); }
+  .callout-danger { background: #fee2e2; border-left: 4px solid var(--red); }
+  .callout strong { display: block; margin-bottom: 4px; }
+
+  code {
+    font-family: 'JetBrains Mono', monospace;
+    background: var(--gray-100); padding: 2px 6px;
+    border-radius: 3px; font-size: 12px; color: var(--gray-800);
+  }
+  pre {
+    background: var(--dark); color: #e5e7eb;
+    padding: 16px 20px; border-radius: 6px;
+    overflow-x: auto; margin: 12px 0 16px; font-size: 12px; line-height: 1.6;
+  }
+  pre code { background: none; padding: 0; color: inherit; }
+
+  .arch-box {
+    background: var(--gray-100); border: 2px solid var(--gray-200);
+    border-radius: 8px; padding: 16px; margin: 12px 0;
+  }
+  .process-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px; margin: 16px 0;
+  }
+  .process-card {
+    border-radius: 8px; padding: 14px; color: white; font-size: 12px;
+  }
+  .process-card h4 { color: white; margin: 0 0 8px; font-size: 13px; }
+  .process-card ul { margin: 0; padding-left: 16px; }
+  .process-card li { margin-bottom: 4px; opacity: 0.9; }
+
+  .zone-flow {
+    display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;
+    margin: 16px 0; align-items: center;
+  }
+  .zone-box {
+    padding: 10px 14px; border-radius: 6px; color: white;
+    text-align: center; min-width: 120px; font-size: 12px;
+  }
+  .zone-arrow { color: var(--gray-400); font-size: 18px; }
+
+  .entity-chain {
+    display: flex; flex-direction: column; align-items: center; gap: 8px; margin: 20px 0;
+  }
+  .entity-box {
+    border-radius: 8px; padding: 12px 24px; color: white;
+    text-align: center; min-width: 280px; font-size: 12px;
+  }
+  .entity-box strong { font-size: 14px; display: block; margin-bottom: 4px; }
+  .entity-arrow { color: var(--gray-400); font-size: 13px; }
+
+  .footer {
+    text-align: center; padding: 40px 20px;
+    color: var(--gray-400); font-size: 12px;
+    border-top: 1px solid var(--gray-200); margin-top: 60px;
+  }
+</style>
+</head>
+<body>
+
+<div class="download-bar no-print">
+  <span>VLM Vision &mdash; Traceability Module Design Spec</span>
+  <button class="download-btn" onclick="window.print()">Save as PDF</button>
+</div>
+
+<div class="cover">
+  <h1>Traceability Module Design Spec</h1>
+  <div class="subtitle">Packing-to-Shipping Evidence &amp; Verification System</div>
+  <div class="meta">
+    <strong>Product:</strong> VLM Vision (new module)<br>
+    <strong>Prepared for:</strong> Metwall Design Solutions Inc.<br>
+    <strong>System:</strong> Configurable Multi-Zone Video Traceability with Dual Barcode Verification<br>
+    <strong>AI Models:</strong> YOLOv8n &rarr; ONNX (4 models)<br>
+    <strong>Cloud:</strong> Zoho Catalyst (Datastore + File Store + Functions)<br>
+    <strong>Version:</strong> 1.0 &mdash; April 2026
+  </div>
+</div>
+
+<div class="content">
+
+  <div class="toc">
+    <h3>Table of Contents</h3>
+    <ol>
+      <li><a href="#purpose">Purpose &amp; Business Goals</a></li>
+      <li><a href="#architecture">System Architecture</a></li>
+      <li><a href="#zones">Camera Zones</a></li>
+      <li><a href="#data-model">Data Model</a></li>
+      <li><a href="#barcode">Barcode Dual Verification</a></li>
+      <li><a href="#video">Video Pipeline</a></li>
+      <li><a href="#ai-models">AI Models &amp; Detection</a></li>
+      <li><a href="#dashboard">Admin Dashboard</a></li>
+      <li><a href="#config">Configuration</a></li>
+      <li><a href="#cloud-routes">Cloud Function Routes</a></li>
+      <li><a href="#project-structure">Project Structure</a></li>
+      <li><a href="#testing">Testing Strategy</a></li>
+      <li><a href="#out-of-scope">Out of Scope</a></li>
+    </ol>
+  </div>
+
+  <!-- ============================================================ -->
+  <h2 id="purpose">1. Purpose &amp; Business Goals</h2>
+
+  <p>Build a traceability system that captures video evidence of the entire packing-to-shipping process at Metwall. The system generates verifiable proof that products were correctly packed, labeled, palletized, and loaded onto trucks.</p>
+
+  <h3>Business Objectives</h3>
+  <ul>
+    <li><strong>Visual evidence</strong> &mdash; Generate timestamped video proof of every shipment</li>
+    <li><strong>Reduce claims</strong> &mdash; Prove items were correctly packed with irrefutable footage</li>
+    <li><strong>Protect revenue</strong> &mdash; Defend against non-payment disputes with loading evidence</li>
+    <li><strong>Catch errors early</strong> &mdash; Dual barcode verification (camera + scanner) detects labeling mistakes before shipping</li>
+  </ul>
+
+  <!-- ============================================================ -->
+  <h2 id="architecture" class="page-break">2. System Architecture</h2>
+
+  <h3>2.1 Three-Process Modular Design</h3>
+
+  <p>The traceability module runs as three separate processes sharing a core library. This isolates video recording (resource-intensive) from AI inference and keeps the existing VLM Bay Agent untouched.</p>
+
+  <div class="process-grid">
+    <div class="process-card" style="background:#1a56db">
+      <h4>Process 1 &mdash; VLM Bay Agent</h4>
+      <p style="opacity:0.7;font-style:italic;margin-bottom:6px">Existing &mdash; no changes</p>
+      <ul>
+        <li>CameraAgent (bay cameras)</li>
+        <li>Detector (metwall.onnx)</li>
+        <li>PickVerifier, ModulaClient</li>
+        <li>Display overlay (WebSocket)</li>
+      </ul>
+    </div>
+    <div class="process-card" style="background:#059669">
+      <h4>Process 2 &mdash; Traceability Agent</h4>
+      <p style="opacity:0.7;font-style:italic;margin-bottom:6px">New module</p>
+      <ul>
+        <li>ZoneManager (5 zones)</li>
+        <li>BarcodeReader (camera + USB)</li>
+        <li>PalletTracker</li>
+        <li>EventCorrelator</li>
+        <li>EvidenceGenerator</li>
+        <li>Detector (3 ONNX models)</li>
+      </ul>
+    </div>
+    <div class="process-card" style="background:#d97706">
+      <h4>Process 3 &mdash; Video Recorder</h4>
+      <p style="opacity:0.7;font-style:italic;margin-bottom:6px">New module</p>
+      <ul>
+        <li>MultiCameraRecorder</li>
+        <li>VideoSegmenter (5-min chunks)</li>
+        <li>CloudUploader</li>
+        <li>RetentionManager (60 days)</li>
+        <li>ClipExtractor (&plusmn;30s evidence)</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="arch-box">
+    <h4 style="margin-top:0">Shared Core Library</h4>
+    <p>Refactored from existing modules: <code>camera_agent</code>, <code>detector</code>, <code>offline_queue</code>, <code>cloud_sync_client</code>, <code>config</code>, <code>models</code>, <code>display_server</code></p>
+  </div>
+
+  <h3>2.2 Cloud Backend (Zoho Catalyst)</h3>
+  <table>
+    <tr><th>Service</th><th>Purpose</th></tr>
+    <tr><td><strong>Functions</strong></td><td>New routes for events, shipments, pallets, boxes, evidence clips, video segments</td></tr>
+    <tr><td><strong>Datastore</strong></td><td>New tables: shipments, pallets, boxes, zone_events, video_segments, evidence_clips</td></tr>
+    <tr><td><strong>File Store</strong></td><td>Video segment storage (5-min MP4 files) + evidence clip storage</td></tr>
+    <tr><td><strong>Admin Dashboard</strong></td><td>3 new tabs: Traceability Search, Live Zones, Video Archive</td></tr>
+  </table>
+
+  <h3>2.3 Inter-Process Communication</h3>
+  <ul>
+    <li><strong>SQLite event queue</strong> &mdash; same pattern as existing offline_queue</li>
+    <li><strong>Filesystem signals</strong> &mdash; clip extraction requests (write request file &rarr; clip appears)</li>
+  </ul>
+
+  <!-- ============================================================ -->
+  <h2 id="zones" class="page-break">3. Camera Zones (Configurable)</h2>
+
+  <p>Zones are fully configurable &mdash; add, remove, or reorder them to match any manufacturing process. Each installation defines its own flow via a <code>zones.json</code> config file. The system ships with a library of <strong>zone types</strong> that can be composed into any sequence.</p>
+
+  <h3>3.1 Zone Types (Built-in Library)</h3>
+
+  <table>
+    <tr><th>Zone Type</th><th>Purpose</th><th>AI Models</th><th>Events</th></tr>
+    <tr><td><code>vlm_pick</code></td><td>Modula VLM bay pick verification</td><td>metwall.onnx</td><td>pick_correct, pick_wrong, pick_short</td></tr>
+    <tr><td><code>packing</code></td><td>Box packing + content verification</td><td>metwall.onnx, box_state.onnx</td><td>box_packed, content_detected, barcode_applied</td></tr>
+    <tr><td><code>barcode_scan</code></td><td>Barcode reading + dual verification</td><td>barcode.onnx + pyzbar</td><td>barcode_scanned, barcode_match/mismatch</td></tr>
+    <tr><td><code>sealing</code></td><td>Confirm box sealed/taped</td><td>box_state.onnx</td><td>box_sealed, seal_verified</td></tr>
+    <tr><td><code>crating</code></td><td>Crating / special packaging</td><td>box_state.onnx</td><td>crate_packed, crate_sealed</td></tr>
+    <tr><td><code>quality_check</code></td><td>Visual quality inspection</td><td>(custom model)</td><td>qc_passed, qc_failed, qc_flagged</td></tr>
+    <tr><td><code>pallet_assembly</code></td><td>Track boxes placed on pallets</td><td>pallet.onnx</td><td>pallet_started, box_placed_on_pallet, pallet_completed</td></tr>
+    <tr><td><code>staging</code></td><td>Staging / holding before loading</td><td>pallet.onnx</td><td>pallet_staged, pallet_released</td></tr>
+    <tr><td><code>truck_loading</code></td><td>Confirm pallet loaded + departure</td><td>pallet.onnx</td><td>pallet_loaded, shipment_departed</td></tr>
+    <tr><td><code>custom</code></td><td>User-defined zone</td><td>(configurable)</td><td>(configurable)</td></tr>
+  </table>
+
+  <h3>3.2 Example Configurations</h3>
+
+  <p><strong>Metwall Full Flow (6 zones):</strong></p>
+  <div class="zone-flow">
+    <div class="zone-box" style="background:#374151"><strong>vlm_pick</strong></div>
+    <span class="zone-arrow">&rarr;</span>
+    <div class="zone-box" style="background:#1a56db"><strong>packing</strong></div>
+    <span class="zone-arrow">&rarr;</span>
+    <div class="zone-box" style="background:#059669"><strong>barcode_scan</strong></div>
+    <span class="zone-arrow">&rarr;</span>
+    <div class="zone-box" style="background:#d97706"><strong>sealing</strong></div>
+    <span class="zone-arrow">&rarr;</span>
+    <div class="zone-box" style="background:#dc2626"><strong>pallet_assembly</strong></div>
+    <span class="zone-arrow">&rarr;</span>
+    <div class="zone-box" style="background:#7c3aed"><strong>truck_loading</strong></div>
+  </div>
+
+  <p><strong>Simple Warehouse (3 zones):</strong></p>
+  <div class="zone-flow">
+    <div class="zone-box" style="background:#1a56db"><strong>packing</strong></div>
+    <span class="zone-arrow">&rarr;</span>
+    <div class="zone-box" style="background:#059669"><strong>barcode_scan</strong></div>
+    <span class="zone-arrow">&rarr;</span>
+    <div class="zone-box" style="background:#7c3aed"><strong>truck_loading</strong></div>
+  </div>
+
+  <p><strong>With Crating (7 zones):</strong></p>
+  <div class="zone-flow">
+    <div class="zone-box" style="background:#374151;font-size:11px"><strong>vlm_pick</strong></div>
+    <span class="zone-arrow">&rarr;</span>
+    <div class="zone-box" style="background:#1a56db;font-size:11px"><strong>packing</strong></div>
+    <span class="zone-arrow">&rarr;</span>
+    <div class="zone-box" style="background:#0891b2;font-size:11px"><strong>crating</strong></div>
+    <span class="zone-arrow">&rarr;</span>
+    <div class="zone-box" style="background:#059669;font-size:11px"><strong>barcode_scan</strong></div>
+    <span class="zone-arrow">&rarr;</span>
+    <div class="zone-box" style="background:#d97706;font-size:11px"><strong>sealing</strong></div>
+    <span class="zone-arrow">&rarr;</span>
+    <div class="zone-box" style="background:#dc2626;font-size:11px"><strong>pallet_asm</strong></div>
+    <span class="zone-arrow">&rarr;</span>
+    <div class="zone-box" style="background:#7c3aed;font-size:11px"><strong>truck_load</strong></div>
+  </div>
+
+  <div class="callout callout-info">
+    <strong>Dynamic Zone Management</strong>
+    Zones can be enabled/disabled without restarting. New zone types can be added as Python plugins implementing the ZoneHandler interface. Zone order defines the expected flow &mdash; events are validated against the sequence. Each zone can have multiple cameras.
+  </div>
+
+  <!-- ============================================================ -->
+  <h2 id="data-model" class="page-break">4. Data Model</h2>
+
+  <h3>4.1 Entity Hierarchy</h3>
+
+  <div class="entity-chain">
+    <div class="entity-box" style="background:#7c3aed">
+      <strong>Shipment</strong>
+      shipment_id | customer | order_ref | truck_plate | departure_time | status
+    </div>
+    <span class="entity-arrow">&darr; has many</span>
+    <div class="entity-box" style="background:#dc2626">
+      <strong>Pallet</strong>
+      pallet_id | shipment_id | pallet_number | assembly_start | assembly_end | box_count | loaded_at
+    </div>
+    <span class="entity-arrow">&darr; has many</span>
+    <div class="entity-box" style="background:#1a56db">
+      <strong>Box</strong>
+      box_id | barcode | pallet_id | sku | qty | packed_at | sealed_at | barcode_verified | content_verified
+    </div>
+    <span class="entity-arrow">&darr; has many</span>
+    <div class="entity-box" style="background:#059669">
+      <strong>ZoneEvent</strong>
+      event_id | box_id | pallet_id | zone_id | event_type | timestamp | camera_id | barcode_camera | barcode_scanner | match_status | confidence | video_segment_id | video_offset_sec
+    </div>
+    <span class="entity-arrow">&darr; references</span>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center">
+      <div class="entity-box" style="background:#d97706;min-width:200px">
+        <strong>VideoSegment</strong>
+        segment_id | camera_id | zone_id | start_time | end_time | cloud_url | uploaded | expires_at
+      </div>
+      <div class="entity-box" style="background:#0891b2;min-width:200px">
+        <strong>EvidenceClip</strong>
+        clip_id | event_id | box_id | pallet_id | clip_start | clip_end | cloud_url | retained_indefinitely
+      </div>
+    </div>
+  </div>
+
+  <h3>4.2 Event Types by Zone</h3>
+  <table>
+    <tr><th>Zone</th><th>Event Types</th></tr>
+    <tr><td><strong>1. Packing</strong></td><td><code>box_packed</code>, <code>barcode_applied</code>, <code>content_detected</code></td></tr>
+    <tr><td><strong>2. Conveyor</strong></td><td><code>barcode_scanned</code>, <code>barcode_camera_read</code>, <code>barcode_match</code>, <code>barcode_mismatch</code></td></tr>
+    <tr><td><strong>3. Sealing</strong></td><td><code>box_sealed</code>, <code>seal_verified</code></td></tr>
+    <tr><td><strong>4. Pallet</strong></td><td><code>pallet_started</code>, <code>box_placed_on_pallet</code>, <code>pallet_completed</code></td></tr>
+    <tr><td><strong>5. Truck</strong></td><td><code>pallet_loaded</code>, <code>shipment_departed</code></td></tr>
+  </table>
+
+  <h3>4.3 Search Capabilities</h3>
+  <ul>
+    <li><strong>By barcode:</strong> Box &rarr; all ZoneEvents &rarr; VideoSegments &rarr; EvidenceClips</li>
+    <li><strong>By pallet:</strong> Pallet &rarr; all Boxes &rarr; all ZoneEvents &rarr; video timeline</li>
+    <li><strong>By shipment/order:</strong> Shipment &rarr; Pallets &rarr; Boxes &rarr; full evidence chain</li>
+    <li><strong>By date range:</strong> All events within timeframe, filterable by zone</li>
+  </ul>
+
+  <!-- ============================================================ -->
+  <h2 id="barcode" class="page-break">5. Barcode Dual Verification</h2>
+
+  <p>Zone 2 performs dual verification using two independent barcode reads:</p>
+
+  <div class="process-grid">
+    <div class="arch-box" style="border-left:4px solid #059669">
+      <h4 style="margin-top:0;color:#059669">Camera Path</h4>
+      <ol>
+        <li>Capture frame from Zone 2 camera</li>
+        <li>YOLO barcode detection (barcode.onnx)</li>
+        <li>Crop barcode region from frame</li>
+        <li>Decode with pyzbar/zxing</li>
+        <li>Result: <code>barcode_camera</code> value</li>
+      </ol>
+    </div>
+    <div class="arch-box" style="border-left:4px solid #d97706">
+      <h4 style="margin-top:0;color:#d97706">Scanner Path</h4>
+      <ol>
+        <li>Physical USB barcode scanner</li>
+        <li>Serial/HID input listener</li>
+        <li>Timestamp correlation</li>
+        <li>Result: <code>barcode_scanner</code> value</li>
+      </ol>
+    </div>
+  </div>
+
+  <p><strong>EventCorrelator</strong> matches readings within a 5-second window:</p>
+
+  <table>
+    <tr><th>Result</th><th>Condition</th><th>Action</th></tr>
+    <tr><td style="color:#059669;font-weight:600">MATCH</td><td>Both readings agree</td><td><code>barcode_verified = true</code></td></tr>
+    <tr><td style="color:#dc2626;font-weight:600">MISMATCH</td><td>Different values</td><td>Alert event + automatic evidence clip generation</td></tr>
+    <tr><td style="color:#d97706;font-weight:600">PARTIAL</td><td>Only one source read</td><td>Warning logged, <code>camera_only</code> or <code>scanner_only</code> status</td></tr>
+  </table>
+
+  <!-- ============================================================ -->
+  <h2 id="video" class="page-break">6. Video Pipeline</h2>
+
+  <h3>6.1 Three-Stage Flow</h3>
+
+  <div class="arch-box" style="border-left:4px solid #d97706">
+    <h4 style="margin-top:0;color:#d97706">Stage 1: Local Recording</h4>
+    <p>H.264 encoding via OpenCV VideoWriter. Split into 5-minute segments per camera. Local buffer: 24 hours.</p>
+  </div>
+
+  <div class="arch-box" style="border-left:4px solid #7c3aed">
+    <h4 style="margin-top:0;color:#7c3aed">Stage 2: Cloud Upload</h4>
+    <p>Background queue uploads completed segments to Catalyst File Store. Retry on network failure. Non-blocking to recording.</p>
+  </div>
+
+  <div class="arch-box" style="border-left:4px solid #0891b2">
+    <h4 style="margin-top:0;color:#0891b2">Stage 3: Evidence Clip Extraction</h4>
+    <p>On-demand: user searches event &rarr; system locates video_segment + offset &rarr; extracts &plusmn;30s clip &rarr; clip uploaded and retained indefinitely.</p>
+  </div>
+
+  <h3>6.2 Storage Estimates</h3>
+  <table>
+    <tr><th>Parameter</th><th>Value</th><th>Notes</th></tr>
+    <tr><td>Cameras</td><td>5</td><td>1 per zone</td></tr>
+    <tr><td>Resolution</td><td>1920&times;1080 (Full HD)</td><td>4K optional but 4x storage</td></tr>
+    <tr><td>Frame rate</td><td>15 FPS</td><td>Sufficient for evidence; configurable</td></tr>
+    <tr><td>Bitrate</td><td>~2 Mbps per camera</td><td>H.264 encoding</td></tr>
+    <tr><td>Per camera per hour</td><td>~900 MB</td><td></td></tr>
+    <tr><td><strong>5 cameras &times; 10hr shift</strong></td><td><strong>~45 GB/day</strong></td><td>Single shift</td></tr>
+    <tr><td><strong>60-day retention</strong></td><td><strong>~2.7 TB</strong></td><td>Cloud storage rolling window</td></tr>
+    <tr><td>Segment size (5 min)</td><td>~75 MB</td><td>Manageable upload chunks</td></tr>
+    <tr><td>Evidence clip (60s)</td><td>~15 MB</td><td>Quick to download/share</td></tr>
+  </table>
+
+  <h3>6.3 Retention Policy</h3>
+  <ul>
+    <li><strong>Video segments:</strong> 60 days in cloud, auto-deleted by RetentionManager</li>
+    <li><strong>Local buffer:</strong> 24 hours on factory machine, then cleaned up</li>
+    <li><strong>Evidence clips:</strong> Retained <strong>indefinitely</strong> (flagged disputes never expire)</li>
+    <li><strong>Event metadata:</strong> Kept <strong>forever</strong> in Catalyst Datastore</li>
+  </ul>
+
+  <div class="callout callout-success">
+    <strong>Resilience (Offline-First)</strong>
+    Recording never stops, even if cloud is unreachable. Segments queue locally and upload when connection restores. 24-hour local buffer ensures no data loss. Same offline-queue pattern as existing VLM pick sync.
+  </div>
+
+  <!-- ============================================================ -->
+  <h2 id="ai-models" class="page-break">7. AI Models &amp; Detection</h2>
+
+  <p>Four ONNX models, all YOLOv8n architecture, trained via Roboflow:</p>
+
+  <table>
+    <tr><th>Model</th><th>Classes</th><th>Zones</th><th>Images</th><th>Difficulty</th></tr>
+    <tr><td><strong>metwall.onnx</strong></td><td>150 SKU classes (SKU__color)</td><td>Zone 1</td><td>Already trained</td><td>Done</td></tr>
+    <tr><td><strong>barcode.onnx</strong></td><td>barcode, qr_code, label</td><td>Zone 2</td><td>~500</td><td>Easy</td></tr>
+    <tr><td><strong>box_state.onnx</strong></td><td>box_open, box_sealed, box_taped, box_labeled</td><td>Zones 1, 3</td><td>~800</td><td>Medium</td></tr>
+    <tr><td><strong>pallet.onnx</strong></td><td>pallet_empty, pallet_partial, pallet_full, box_on_pallet, forklift, truck_bay</td><td>Zones 4, 5</td><td>~1,000</td><td>Medium</td></tr>
+  </table>
+
+  <div class="callout callout-info">
+    <strong>Model Management</strong>
+    All models use the existing ModelRegistry + hot-swap pattern. Each model has its own version env var. Traceability Agent loads 3 models simultaneously. Same Roboflow training workflow as documented in the existing training manual.
+  </div>
+
+  <!-- ============================================================ -->
+  <h2 id="dashboard" class="page-break">8. Admin Dashboard</h2>
+
+  <p>Three new tabs added to the existing VLM admin dashboard:</p>
+
+  <h3>8.1 Traceability Search</h3>
+  <ul>
+    <li>Search bar: barcode, pallet ID, order/shipment number, date range</li>
+    <li>Results table: barcode, SKU, pallet, shipment, zones passed (N/5), barcode match status, date</li>
+    <li>Mismatches highlighted in red with auto-generated evidence clips</li>
+    <li>Actions: &ldquo;Timeline&rdquo; link and &ldquo;Clips&rdquo; link per row</li>
+  </ul>
+
+  <h3>8.2 Timeline View</h3>
+  <ul>
+    <li>Visual vertical timeline showing a box&rsquo;s journey through all 5 zones</li>
+    <li>Each zone: timestamp, event details, confidence scores</li>
+    <li>Clickable &ldquo;Play Clip&rdquo; button per zone &rarr; plays &plusmn;30s evidence clip in-browser</li>
+    <li>Color-coded by zone (blue, green, orange, red, purple)</li>
+  </ul>
+
+  <h3>8.3 Live Zones</h3>
+  <ul>
+    <li>Grid of 5 zone cards with real-time MJPEG camera feeds</li>
+    <li>Each card: zone name, camera feed, current box/pallet info, status</li>
+    <li>Same WebSocket pattern as existing bay overlay but multi-zone</li>
+  </ul>
+
+  <h3>8.4 Video Archive</h3>
+  <ul>
+    <li>Browse stored video segments by camera, zone, date</li>
+    <li>Upload status indicators (uploaded/pending/failed)</li>
+    <li>Manual clip extraction trigger</li>
+    <li>Storage usage statistics</li>
+  </ul>
+
+  <!-- ============================================================ -->
+  <h2 id="config" class="page-break">9. Configuration</h2>
+
+  <p>New environment variables added to existing <code>.env</code>:</p>
+
+  <pre><code># Traceability Module
+TRACEABILITY_ENABLED=true
+ZONE_COUNT=5
+
+# Zone cameras (one per zone)
+CAMERA_ZONE1=2
+CAMERA_ZONE2=3
+CAMERA_ZONE3=4
+CAMERA_ZONE4=5
+CAMERA_ZONE5=6
+
+# Barcode scanner
+BARCODE_SCANNER_PORT=/dev/ttyUSB0
+BARCODE_SCANNER_ENABLED=true
+BARCODE_MATCH_WINDOW_SEC=5
+
+# Video recording
+VIDEO_ENABLED=true
+VIDEO_FPS=15
+VIDEO_RESOLUTION=1920x1080
+VIDEO_SEGMENT_MINUTES=5
+VIDEO_LOCAL_BUFFER_HOURS=24
+VIDEO_RETENTION_DAYS=60
+VIDEO_CODEC=h264
+VIDEO_BITRATE=2000000
+
+# AI models
+MODEL_BARCODE_PATH=models/barcode.onnx
+MODEL_BARCODE_VERSION=v1
+MODEL_BOXSTATE_PATH=models/box_state.onnx
+MODEL_BOXSTATE_VERSION=v1
+MODEL_PALLET_PATH=models/pallet.onnx
+MODEL_PALLET_VERSION=v1
+
+# Evidence clips
+EVIDENCE_CLIP_MARGIN_SEC=30
+EVIDENCE_RETAIN_INDEFINITELY=true</code></pre>
+
+  <!-- ============================================================ -->
+  <h2 id="cloud-routes">10. Cloud Function Routes</h2>
+
+  <p>Added to existing Express app in <code>/functions/vlm_vision_function/</code>:</p>
+
+  <table>
+    <tr><th>Method</th><th>Route</th><th>Purpose</th></tr>
+    <tr><td>POST</td><td>/shipments</td><td>Create new shipment</td></tr>
+    <tr><td>GET</td><td>/shipments/:id</td><td>Get shipment with pallets and boxes</td></tr>
+    <tr><td>GET</td><td>/shipments/search</td><td>Search by order_ref, customer, date</td></tr>
+    <tr><td>POST</td><td>/pallets</td><td>Create/update pallet</td></tr>
+    <tr><td>GET</td><td>/pallets/:id</td><td>Get pallet with boxes and events</td></tr>
+    <tr><td>POST</td><td>/boxes</td><td>Register new box</td></tr>
+    <tr><td>GET</td><td>/boxes/:barcode</td><td>Get box by barcode with full event chain</td></tr>
+    <tr><td>POST</td><td>/events/sync</td><td>Batch sync zone events from local agent</td></tr>
+    <tr><td>GET</td><td>/events/timeline/:box_id</td><td>Get all events for a box ordered by zone</td></tr>
+    <tr><td>POST</td><td>/video/segments</td><td>Register uploaded video segment</td></tr>
+    <tr><td>GET</td><td>/video/segments</td><td>List segments by camera/zone/date</td></tr>
+    <tr><td>DELETE</td><td>/video/segments/expired</td><td>Clean up expired segments</td></tr>
+    <tr><td>POST</td><td>/evidence/clips</td><td>Register generated evidence clip</td></tr>
+    <tr><td>GET</td><td>/evidence/clips/:event_id</td><td>Get clip for an event</td></tr>
+    <tr><td>POST</td><td>/evidence/extract</td><td>Request clip extraction</td></tr>
+  </table>
+
+  <!-- ============================================================ -->
+  <h2 id="project-structure" class="page-break">11. Project Structure</h2>
+
+  <pre><code>vlm_vision/
+├── local_agent/
+│   ├── core/                    # Shared core (refactored)
+│   │   ├── camera_agent.py
+│   │   ├── detector.py
+│   │   ├── offline_queue.py
+│   │   ├── cloud_sync_client.py
+│   │   ├── config.py
+│   │   └── models.py
+│   ├── bay/                     # Process 1 — existing
+│   │   ├── main.py
+│   │   ├── pick_verifier.py
+│   │   ├── modula_client.py
+│   │   ├── display_server.py
+│   │   ├── frame_store.py
+│   │   ├── model_registry.py
+│   │   └── sync_worker.py
+│   ├── traceability/            # Process 2 — new
+│   │   ├── main.py
+│   │   ├── zone_manager.py
+│   │   ├── barcode_reader.py
+│   │   ├── pallet_tracker.py
+│   │   ├── event_correlator.py
+│   │   ├── evidence_generator.py
+│   │   └── zone_display_server.py
+│   └── video/                   # Process 3 — new
+│       ├── main.py
+│       ├── multi_camera_recorder.py
+│       ├── video_segmenter.py
+│       ├── cloud_uploader.py
+│       ├── retention_manager.py
+│       └── clip_extractor.py
+├── overlay/                     # Existing bay overlay
+├── client/                      # Admin dashboard (extended)
+├── models/                      # ONNX model files
+├── tests/
+│   ├── test_bay/               # Existing tests (moved)
+│   ├── test_traceability/      # New tests
+│   └── test_video/             # New tests
+└── scripts/
+    ├── run_bay.sh
+    ├── run_traceability.sh
+    ├── run_video.sh
+    └── run_all.sh</code></pre>
+
+  <!-- ============================================================ -->
+  <h2 id="testing">12. Testing Strategy</h2>
+
+  <ul>
+    <li>Unit tests for each new module (zone_manager, barcode_reader, pallet_tracker, event_correlator, evidence_generator, video_segmenter, clip_extractor, retention_manager)</li>
+    <li>Integration tests for barcode dual verification flow</li>
+    <li>Integration tests for event &rarr; video segment &rarr; clip extraction pipeline</li>
+    <li>Cloud function tests for all new routes</li>
+    <li>End-to-end test with mock cameras simulating full zone traversal</li>
+    <li>Same mock-first (London School TDD) approach as existing tests</li>
+  </ul>
+
+  <!-- ============================================================ -->
+  <h2 id="out-of-scope">13. Out of Scope</h2>
+
+  <ul>
+    <li>Customer-facing portal (internal search only for now)</li>
+    <li>Multi-factory deployment (single installation)</li>
+    <li>Real-time streaming to cloud (only recorded segments uploaded)</li>
+    <li>Automatic dispute filing (manual process using evidence clips)</li>
+    <li>Integration with ERP/WMS beyond existing Modula client</li>
+  </ul>
+
+  <div class="footer">
+    <p>VLM Vision &mdash; Traceability Module Design Spec v1.0</p>
+    <p>Metwall Design Solutions Inc. &mdash; Prepared by Dhar Solutions</p>
+    <p>April 2026 &mdash; Confidential</p>
+  </div>
+
+</div>
+
+</body>
+</html>
