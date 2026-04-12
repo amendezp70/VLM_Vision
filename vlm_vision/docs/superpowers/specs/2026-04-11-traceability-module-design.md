@@ -494,7 +494,286 @@ vlm_vision/
 - End-to-end test with mock cameras simulating full zone traversal
 - Same mock-first (London School TDD) approach as existing tests
 
-## 13. Out of Scope
+---
+
+# PHASE 2: Robotic Picking Module
+
+## 14. Overview — Automated VLM Picking
+
+Phase 2 adds a collaborative robot arm to one Modula VLM bay, replacing the human operator for the picking (kitting) stage of manufacturing. The robot uses VLM Vision's existing camera + AI detection as its eyes — Phase 1 builds the robot's vision system, Phase 2 adds the arms.
+
+**What the robot does:**
+- Receives pick orders from the Modula WMS (same as human operator today)
+- VLM Vision camera identifies the correct SKU + exact tray slot position
+- Robot arm grips the aluminum profile at its center of gravity
+- Lifts, rotates 90° in air (horizontal → vertical), places into a vertical dolly rack
+- VLM Vision verifies the correct part was removed (before/after detection)
+
+**Parts handled:**
+- Material: Aluminum profiles (extrusions)
+- Length: 3 - 3.3 meters
+- Width: 100mm
+- Height: 20mm
+- Weight: ≤ 5kg
+- Surface: Smooth, flat, rigid — ideal for vacuum grip
+
+## 15. Robot Hardware
+
+### 15.1 Robot Selection: Collaborative Robot Arm
+
+A 6-axis cobot arm eliminates the need for a separate tilting mechanism. The arm grips the profile flat from the VLM tray, rotates it 90° using its wrist joint, and places it vertically into the dolly rack — all in one motion.
+
+**Recommended models:**
+
+| Model | Reach | Payload | Price | Fit |
+|-------|-------|---------|-------|-----|
+| UR20 | 1750mm | 20kg | ~$58K | Best balance of reach + payload |
+| FANUC CRX-25iA | 1889mm | 25kg | ~$55K | Most reach + payload headroom |
+| FANUC CRX-20iA/L | 1418mm | 20kg | ~$50K | Good fit, solid reach |
+
+**Why a cobot arm over a gantry system:**
+
+| Factor | Gantry + Tilting Table | Robot Arm |
+|--------|----------------------|-----------|
+| Systems to build | 3 (gantry + table + transfer) | 1 |
+| Steps per pick | 5 | 3 |
+| Cycle time | ~12.5 seconds | ~8 seconds |
+| Picks/hour | ~290 | ~450 |
+| Floor space | 14m² | 4m² + swing clearance |
+| Rotation | Separate tilting table | Built-in (6-axis wrist) |
+| Cost | $25-40K | $55-65K |
+| Maintenance | 3 systems | 1 sealed unit |
+| Flexibility | Fixed to one task | Reprogrammable |
+| Safety | Needs light curtains | Human-safe cobot, no cage |
+
+### 15.2 End Effector (Gripper)
+
+Vacuum gripper bar attached to the arm's tool flange:
+- 500mm vacuum bar with 3-4 suction cups (grips center section of profile)
+- Venturi vacuum generator (no external compressor needed — uses the arm's pneumatic line)
+- Vacuum pressure sensor confirms grip before lifting
+- Foam/rubber cup material — won't scratch aluminum surface
+- Quick-release tool changer for future gripper swaps
+
+### 15.3 Vertical Dolly Rack
+
+- Wheeled rack with locking casters
+- 10-15 vertical slots with rubber-padded dividers
+- Slot width: 25mm (accommodates 20mm profile with clearance)
+- Height: 3.5m (accommodates 3.3m profiles)
+- Slot occupancy sensors (optical or mechanical) confirm placement
+- Rack ID barcode for traceability (which profiles on which rack)
+- Operator rolls loaded rack to packing zone (Zone 2 in traceability flow)
+
+### 15.4 Physical Layout
+
+```
+Top-Down View:
+
+    ┌─────────────┐
+    │  MODULA VLM  │
+    │    Bay       │     ┌─────────┐
+    │  ┌────────┐  │     │         │
+    │  │  Tray  │  │     │  DOLLY  │
+    │  │Opening │◄─┼──►  │  RACK   │
+    │  │        │  │  ▲  │(vertical│
+    │  └────────┘  │  │  │ slots)  │
+    │              │  │  │         │
+    └─────────────┘  │  └─────────┘
+                     │
+                   ┌─┴─┐
+                   │ARM│  ← Robot base
+                   │ ● │    (floor-mounted)
+                   └───┘
+                   
+    ◄── 1.5m ──►◄─ 1.5m ─►
+    
+    Swing clearance: 1.5m radius around arm base
+    Camera: Mounted above tray opening (existing VLM Vision camera)
+```
+
+## 16. Pick Sequence
+
+### 16.1 Three-Step Pick Cycle
+
+**Step 1 — Camera Detects (0.5s)**
+1. Modula WMS presents tray with pick order
+2. VLM Vision camera captures frame
+3. YOLO detector identifies SKU + bounding box
+4. Bounding box coordinates → tray slot XY position
+5. Pick command sent to robot controller: `{slot_x, slot_y, sku, qty}`
+
+**Step 2 — Arm Picks + Rotates (4.5s)**
+1. Arm moves to tray slot XY position
+2. Z-axis lowers to profile height
+3. Vacuum engages — pressure sensor confirms grip
+4. Arm lifts profile clear of tray dividers
+5. 6-axis wrist rotates 90° (horizontal → vertical)
+6. Profile now hanging vertical, gripped at center of gravity
+
+**Step 3 — Place in Rack (3s)**
+1. Arm traverses to next open rack slot
+2. Lowers profile into slot
+3. Vacuum releases
+4. Slot sensor confirms profile in place
+5. Arm returns to home position
+
+**Total cycle: ~8 seconds per pick = ~450 picks/hour**
+
+### 16.2 Error Handling
+
+| Error | Detection | Response |
+|-------|-----------|----------|
+| Vacuum leak (no grip) | Pressure sensor < threshold | Retry pick, alert after 3 failures |
+| Wrong part detected | Before/after YOLO mismatch | Stop, alert operator, log event |
+| Part dropped during rotation | Vacuum pressure loss mid-cycle | E-stop, alert, log with video |
+| Rack slot occupied | Slot occupancy sensor | Skip to next open slot |
+| Rack full | All slot sensors occupied | Pause picks, alert operator to swap rack |
+| Arm collision | Cobot force/torque sensor | Auto-stop (built-in cobot safety) |
+| VLM tray not presented | No tray detected by camera | Wait for Modula WMS signal |
+
+## 17. VLM Vision Software Integration
+
+### 17.1 New Zone Type: `robot_pick`
+
+Added to the configurable zone type library:
+
+```json
+{
+  "zone_id": 1,
+  "name": "VLM Robotic Pick",
+  "type": "robot_pick",
+  "cameras": [0],
+  "enabled": true,
+  "models": ["metwall.onnx"],
+  "scanner": null,
+  "robot": {
+    "controller": "ur20",
+    "protocol": "modbus_tcp",
+    "ip": "192.168.1.100",
+    "port": 502,
+    "gripper": "vacuum",
+    "rack_slots": 15,
+    "home_position": [0, -90, 90, -90, -90, 0]
+  }
+}
+```
+
+### 17.2 New Module: `robot_controller.py`
+
+```
+local_agent/
+└── traceability/
+    ├── zone_types/
+    │   └── robot_pick.py         # Robot pick zone handler
+    └── robot/
+        ├── robot_controller.py   # Arm motion commands (Modbus/RTDE)
+        ├── vacuum_gripper.py     # Gripper control + pressure monitoring
+        ├── rack_manager.py       # Track slot occupancy + rack ID
+        └── pick_planner.py       # Convert bbox → tray XY → arm trajectory
+```
+
+**Key integration point:** The existing `Detector` output (`Detection.bbox`) is converted by `pick_planner.py` into arm trajectory coordinates:
+
+```
+Detection.bbox (px) → tray_slot_xy (mm) → arm_joint_angles (degrees)
+```
+
+This uses a one-time calibration: pixel-to-millimeter mapping from camera frame to physical tray coordinates.
+
+### 17.3 Events
+
+| Event | Trigger | Data |
+|-------|---------|------|
+| `pick_commanded` | WMS order received, camera detected part | sku, tray_slot, rack_id |
+| `pick_executing` | Arm starts moving to tray | arm_position, vacuum_status |
+| `pick_gripped` | Vacuum pressure confirms grip | vacuum_pressure, grip_quality |
+| `pick_rotating` | Arm rotating profile to vertical | rotation_angle |
+| `pick_placed` | Profile placed in rack slot | rack_slot_id, rack_id |
+| `pick_verified` | Before/after detection confirms correct part removed | sku_confirmed, confidence |
+| `pick_failed` | Any error in pick cycle | error_type, retry_count |
+| `rack_full` | All slots occupied | rack_id, profile_count |
+| `rack_swapped` | Operator replaced full rack with empty | old_rack_id, new_rack_id |
+
+### 17.4 Dashboard: Robot Status Panel
+
+New widget in the Live Zones tab:
+
+- Real-time arm position visualization (joint angles)
+- Current pick order (SKU, qty remaining)
+- Vacuum pressure gauge
+- Rack slot occupancy grid (filled/empty)
+- Pick rate (picks/hour, current vs. average)
+- Error log with video timestamps
+- Manual override controls (pause, resume, home, e-stop)
+
+## 18. Calibration & Setup
+
+### 18.1 Camera-to-Robot Calibration
+
+One-time procedure to map camera pixels to robot arm coordinates:
+
+1. Place calibration target (checkerboard) on VLM tray
+2. Camera captures image → detect checkerboard corners
+3. Robot arm touches each corner → record arm XYZ position
+4. Compute homography matrix (pixel → mm transformation)
+5. Store calibration in `calibration.json`
+6. Re-calibrate if camera or arm is repositioned
+
+### 18.2 Tray Mapping
+
+- Modula VLM trays have fixed divider positions
+- Map each divider configuration to slot coordinates
+- Store in `tray_configs.json` — one entry per tray layout
+- When Modula presents a tray, its ID identifies the configuration
+
+## 19. Safety
+
+- **Cobot safety:** UR20/FANUC CRX have built-in force/torque limiting — auto-stops on human contact
+- **No safety cage required** — cobots are rated for human collaboration (ISO 10218-1, ISO/TS 15066)
+- **Swing clearance zone:** 1.5m radius around arm base marked on floor with yellow tape
+- **E-stop buttons:** One on robot controller, one on wall-mounted panel
+- **Vacuum fail-safe:** If vacuum pressure drops below threshold during transit, arm stops and holds position (profile doesn't drop)
+- **Light indicator:** Green (running), yellow (paused/waiting), red (error/e-stop)
+- **Speed reduction:** Arm operates at 50% max speed when proximity sensor detects human in workspace
+
+## 20. Cost Estimate (Phase 2)
+
+| Component | Description | Est. Cost (USD) |
+|-----------|-------------|----------------|
+| Robot arm | UR20 or FANUC CRX-25iA | $50,000 - $58,000 |
+| Vacuum gripper | 500mm bar + cups + venturi generator | $2,000 - $3,500 |
+| Tool changer | Quick-change flange (for future grippers) | $1,500 - $2,500 |
+| Vertical dolly rack | 15-slot rack with sensors, 2 units | $3,000 - $5,000 |
+| Robot controller | Teach pendant + I/O module | Included with arm |
+| Slot occupancy sensors | 15x optical/mechanical sensors per rack | $500 - $1,000 |
+| Mounting pedestal | Floor-mounted steel base for arm | $1,000 - $2,000 |
+| Pneumatic fittings | Air supply for vacuum (if no factory air) | $500 - $1,000 |
+| Safety accessories | E-stops, light stack, floor markings | $1,000 - $1,500 |
+| Calibration tools | Checkerboard target, software setup | $500 |
+| Software integration | robot_controller, pick_planner, rack_manager | $5,000 - $8,000 |
+| Installation & commissioning | Mechanical + electrical + testing | $3,000 - $5,000 |
+| **TOTAL** | | **$68,000 - $87,000** |
+
+## 21. Phase 2 Prerequisites
+
+Phase 2 depends on Phase 1 being operational:
+- VLM Vision camera + YOLO detection must be running and validated at the target bay
+- `metwall.onnx` model must be trained with ≥90% mAP50
+- Zone type plugin system must be implemented (configurable zones)
+- Pick verification (before/after detection) must be working
+
+## 22. Out of Scope (Phase 2)
+
+- Multiple VLM bays (start with one, expand later)
+- Picking non-profile parts (screws, gaskets, hardware) — future gripper additions
+- Autonomous rack transport (operator rolls rack manually)
+- Integration with Modula's internal shuttle control (uses existing WMS API)
+- Multi-robot coordination (single arm per bay)
+
+---
+
+## 23. Out of Scope (Overall)
 
 - Customer-facing portal (internal search only for now)
 - Multi-factory deployment (single installation)
