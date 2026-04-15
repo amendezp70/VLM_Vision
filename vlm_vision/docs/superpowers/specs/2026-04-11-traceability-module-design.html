@@ -185,8 +185,8 @@
 </div>
 
 <div class="cover">
-  <h1>Traceability Module Design Spec</h1>
-  <div class="subtitle">Packing-to-Shipping Evidence &amp; Verification System</div>
+  <h1>Traceability &amp; Robotic Picking Design Spec</h1>
+  <div class="subtitle">Phase 1: Packing-to-Shipping Evidence &nbsp;|&nbsp; Phase 2: Automated VLM Profile Picking</div>
   <div class="meta">
     <strong>Product:</strong> VLM Vision (new module)<br>
     <strong>Prepared for:</strong> Metwall Design Solutions Inc.<br>
@@ -214,7 +214,19 @@
       <li><a href="#cloud-routes">Cloud Function Routes</a></li>
       <li><a href="#project-structure">Project Structure</a></li>
       <li><a href="#testing">Testing Strategy</a></li>
-      <li><a href="#out-of-scope">Out of Scope</a></li>
+      <li><a href="#out-of-scope-p1">Out of Scope (Phase 1)</a></li>
+    </ol>
+    <h3 style="margin-top:16px">Phase 2 &mdash; Robotic Picking</h3>
+    <ol start="14">
+      <li><a href="#robot-overview">Overview &mdash; Automated VLM Picking</a></li>
+      <li><a href="#robot-hardware">Robot Hardware</a></li>
+      <li><a href="#pick-sequence">Pick Sequence</a></li>
+      <li><a href="#robot-software">VLM Vision Software Integration</a></li>
+      <li><a href="#calibration">Calibration &amp; Setup</a></li>
+      <li><a href="#safety">Safety</a></li>
+      <li><a href="#cost-p2">Cost Estimate (Phase 2)</a></li>
+      <li><a href="#prerequisites">Phase 2 Prerequisites</a></li>
+      <li><a href="#out-of-scope-p2">Out of Scope (Phase 2)</a></li>
     </ol>
   </div>
 
@@ -684,7 +696,7 @@ EVIDENCE_RETAIN_INDEFINITELY=true</code></pre>
   </ul>
 
   <!-- ============================================================ -->
-  <h2 id="out-of-scope">13. Out of Scope</h2>
+  <h2 id="out-of-scope-p1">13. Out of Scope (Phase 1)</h2>
 
   <ul>
     <li>Customer-facing portal (internal search only for now)</li>
@@ -694,8 +706,313 @@ EVIDENCE_RETAIN_INDEFINITELY=true</code></pre>
     <li>Integration with ERP/WMS beyond existing Modula client</li>
   </ul>
 
+  <!-- ============================================================ -->
+  <!-- PHASE 2: ROBOTIC PICKING -->
+  <!-- ============================================================ -->
+
+  <div style="background:linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #059669 100%);color:white;padding:60px;margin:60px -32px 40px;text-align:center" class="page-break">
+    <div style="font-size:13px;text-transform:uppercase;letter-spacing:3px;opacity:0.6;margin-bottom:12px">Phase 2</div>
+    <h1 style="font-size:32px;font-weight:700;margin-bottom:12px">Robotic Picking Module</h1>
+    <div style="font-size:17px;opacity:0.8">Automated VLM Profile Picking with Collaborative Robot Arm</div>
+  </div>
+
+  <!-- ============================================================ -->
+  <h2 id="robot-overview">14. Overview &mdash; Automated VLM Picking</h2>
+
+  <p>Phase 2 adds a collaborative robot arm to one Modula VLM bay, replacing the human operator for the picking (kitting) stage. The robot uses VLM Vision&rsquo;s existing camera + AI detection as its eyes &mdash; Phase 1 builds the robot&rsquo;s vision, Phase 2 adds the arms.</p>
+
+  <div class="callout callout-info">
+    <strong>Key Insight: Phase 1 Builds the Robot&rsquo;s Eyes</strong>
+    The same camera and YOLO model that verifies human picks in Phase 1 becomes the robot&rsquo;s guidance system in Phase 2. Detection bounding box &rarr; tray slot coordinates &rarr; arm trajectory.
+  </div>
+
+  <h3>Parts Handled</h3>
+  <div style="display:flex;gap:20px;flex-wrap:wrap;justify-content:center;margin:16px 0">
+    <div style="background:#1e293b;border-radius:8px;padding:16px 24px;text-align:center;color:#e2e8f0">
+      <div style="font-size:28px;font-weight:700;color:#60a5fa">3 &ndash; 3.3m</div>
+      <div style="font-size:12px;color:#94a3b8">Length</div>
+    </div>
+    <div style="background:#1e293b;border-radius:8px;padding:16px 24px;text-align:center;color:#e2e8f0">
+      <div style="font-size:28px;font-weight:700;color:#34d399">100mm</div>
+      <div style="font-size:12px;color:#94a3b8">Width</div>
+    </div>
+    <div style="background:#1e293b;border-radius:8px;padding:16px 24px;text-align:center;color:#e2e8f0">
+      <div style="font-size:28px;font-weight:700;color:#fbbf24">20mm</div>
+      <div style="font-size:12px;color:#94a3b8">Height</div>
+    </div>
+    <div style="background:#1e293b;border-radius:8px;padding:16px 24px;text-align:center;color:#e2e8f0">
+      <div style="font-size:28px;font-weight:700;color:#f87171">&le;5kg</div>
+      <div style="font-size:12px;color:#94a3b8">Weight</div>
+    </div>
+  </div>
+  <p style="text-align:center;color:#6b7280;font-size:13px">Material: Aluminum extrusion profiles &mdash; smooth, flat, rigid surface</p>
+
+  <!-- ============================================================ -->
+  <h2 id="robot-hardware" class="page-break">15. Robot Hardware</h2>
+
+  <h3>15.1 Robot Arm Selection</h3>
+
+  <p>A 6-axis cobot arm grips the profile at its center of gravity, lifts, rotates 90&deg; using its wrist joint (horizontal &rarr; vertical), and places it directly into the dolly rack &mdash; no tilting table needed.</p>
+
+  <table>
+    <tr><th>Model</th><th>Reach</th><th>Payload</th><th>Price</th><th>Fit</th></tr>
+    <tr><td><strong>UR20</strong></td><td>1750mm</td><td>20kg</td><td>~$58K</td><td>Best balance of reach + payload</td></tr>
+    <tr style="background:#f0fdf4"><td><strong>FANUC CRX-25iA</strong></td><td>1889mm</td><td>25kg</td><td>~$55K</td><td style="color:#059669;font-weight:600">Most reach + payload headroom</td></tr>
+    <tr><td><strong>FANUC CRX-20iA/L</strong></td><td>1418mm</td><td>20kg</td><td>~$50K</td><td>Good fit, solid reach</td></tr>
+  </table>
+
+  <h3>15.2 Why Cobot Arm Over Gantry</h3>
+  <table>
+    <tr><th>Factor</th><th>Gantry + Tilting Table</th><th>Robot Arm</th></tr>
+    <tr><td>Systems to build</td><td>3 (gantry + table + transfer)</td><td style="color:#059669;font-weight:600">1</td></tr>
+    <tr><td>Steps per pick</td><td>5</td><td style="color:#059669;font-weight:600">3</td></tr>
+    <tr><td>Cycle time</td><td>~12.5 seconds</td><td style="color:#059669;font-weight:600">~8 seconds</td></tr>
+    <tr><td>Picks/hour</td><td>~290</td><td style="color:#059669;font-weight:600">~450</td></tr>
+    <tr><td>Floor space</td><td>14m&sup2;</td><td style="color:#059669;font-weight:600">4m&sup2; + swing clearance</td></tr>
+    <tr><td>Rotation</td><td>Separate tilting table</td><td style="color:#059669;font-weight:600">Built-in (6-axis wrist)</td></tr>
+    <tr><td>Cost</td><td style="color:#059669">$25&ndash;40K</td><td>$55&ndash;65K</td></tr>
+    <tr><td>Maintenance</td><td>3 systems</td><td style="color:#059669;font-weight:600">1 sealed unit</td></tr>
+    <tr><td>Flexibility</td><td>Fixed to one task</td><td style="color:#059669;font-weight:600">Reprogrammable</td></tr>
+  </table>
+
+  <h3>15.3 End Effector (Gripper)</h3>
+  <ul>
+    <li>500mm vacuum bar with 3&ndash;4 suction cups (grips center section of profile)</li>
+    <li>Venturi vacuum generator (no external compressor needed)</li>
+    <li>Vacuum pressure sensor confirms grip before lifting</li>
+    <li>Foam/rubber cups &mdash; won&rsquo;t scratch aluminum surface</li>
+    <li>Quick-release tool changer for future gripper swaps</li>
+  </ul>
+
+  <h3>15.4 Vertical Dolly Rack</h3>
+  <ul>
+    <li>Wheeled rack with locking casters, 10&ndash;15 vertical slots</li>
+    <li>Rubber-padded dividers, slot width 25mm</li>
+    <li>Height: 3.5m (accommodates 3.3m profiles)</li>
+    <li>Slot occupancy sensors (optical) confirm placement</li>
+    <li>Rack ID barcode for traceability</li>
+    <li>Operator rolls loaded rack to packing zone</li>
+  </ul>
+
+  <h3>15.5 Physical Layout</h3>
+  <pre><code>Top-Down View:
+
+    +---------------+
+    |  MODULA VLM   |
+    |    Bay        |     +---------+
+    |  +--------+   |     |         |
+    |  |  Tray  |   |     |  DOLLY  |
+    |  | Opening|&lt;--+--&gt;  |  RACK   |
+    |  |        |   |  ^  |(vertical|
+    |  +--------+   |  |  | slots)  |
+    |               |  |  |         |
+    +---------------+  |  +---------+
+                       |
+                     +-+-+
+                     |ARM|  &lt;- Robot base
+                     | * |    (floor-mounted)
+                     +---+
+
+    &lt;-- 1.5m --&gt;&lt;- 1.5m -&gt;
+
+    Swing clearance: 1.5m radius around arm base
+    Camera: Mounted above tray (existing VLM Vision camera)</code></pre>
+
+  <!-- ============================================================ -->
+  <h2 id="pick-sequence" class="page-break">16. Pick Sequence</h2>
+
+  <h3>16.1 Three-Step Pick Cycle</h3>
+
+  <div class="process-grid" style="grid-template-columns:repeat(3, 1fr)">
+    <div class="process-card" style="background:#1a56db">
+      <h4>Step 1 &mdash; Camera Detects</h4>
+      <p style="opacity:0.7;font-size:11px;margin-bottom:4px">~0.5 seconds</p>
+      <ul>
+        <li>Modula presents tray</li>
+        <li>VLM Vision camera captures frame</li>
+        <li>YOLO detects SKU + bounding box</li>
+        <li>Bbox &rarr; tray slot XY position</li>
+        <li>Pick command sent to arm</li>
+      </ul>
+    </div>
+    <div class="process-card" style="background:#059669">
+      <h4>Step 2 &mdash; Arm Picks + Rotates</h4>
+      <p style="opacity:0.7;font-size:11px;margin-bottom:4px">~4.5 seconds</p>
+      <ul>
+        <li>Arm moves to tray slot XY</li>
+        <li>Z lowers to profile height</li>
+        <li>Vacuum engages (pressure confirms)</li>
+        <li>Lifts clear of tray dividers</li>
+        <li>Wrist rotates 90&deg; (flat &rarr; vertical)</li>
+      </ul>
+    </div>
+    <div class="process-card" style="background:#7c3aed">
+      <h4>Step 3 &mdash; Place in Rack</h4>
+      <p style="opacity:0.7;font-size:11px;margin-bottom:4px">~3 seconds</p>
+      <ul>
+        <li>Arm traverses to open rack slot</li>
+        <li>Lowers profile into slot</li>
+        <li>Vacuum releases</li>
+        <li>Slot sensor confirms placement</li>
+        <li>Arm returns to home</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="callout callout-success">
+    <strong>Total cycle: ~8 seconds per pick = ~450 picks/hour</strong>
+    Compared to human operator averaging ~20&ndash;30 seconds per pick (~120&ndash;180/hour), the robot delivers 2.5&ndash;3.75x throughput improvement.
+  </div>
+
+  <h3>16.2 Error Handling</h3>
+  <table>
+    <tr><th>Error</th><th>Detection</th><th>Response</th></tr>
+    <tr><td>No grip (vacuum leak)</td><td>Pressure sensor &lt; threshold</td><td>Retry pick, alert after 3 failures</td></tr>
+    <tr><td>Wrong part detected</td><td>Before/after YOLO mismatch</td><td>Stop, alert operator, log event</td></tr>
+    <tr><td>Part dropped mid-rotation</td><td>Vacuum pressure loss</td><td>E-stop, alert, log with video</td></tr>
+    <tr><td>Rack slot occupied</td><td>Slot occupancy sensor</td><td>Skip to next open slot</td></tr>
+    <tr><td>Rack full</td><td>All slot sensors occupied</td><td>Pause picks, alert to swap rack</td></tr>
+    <tr><td>Arm collision</td><td>Cobot force/torque sensor</td><td>Auto-stop (built-in safety)</td></tr>
+    <tr><td>No tray presented</td><td>Camera detects no tray</td><td>Wait for Modula WMS signal</td></tr>
+  </table>
+
+  <!-- ============================================================ -->
+  <h2 id="robot-software" class="page-break">17. VLM Vision Software Integration</h2>
+
+  <h3>17.1 New Zone Type: <code>robot_pick</code></h3>
+
+  <p>Added to the configurable zone type library in <code>zones.json</code>:</p>
+  <pre><code>{
+  "zone_id": 1,
+  "name": "VLM Robotic Pick",
+  "type": "robot_pick",
+  "cameras": [0],
+  "models": ["metwall.onnx"],
+  "robot": {
+    "controller": "ur20",
+    "protocol": "modbus_tcp",
+    "ip": "192.168.1.100",
+    "port": 502,
+    "gripper": "vacuum",
+    "rack_slots": 15
+  }
+}</code></pre>
+
+  <h3>17.2 New Modules</h3>
+  <pre><code>local_agent/traceability/
+  ├── zone_types/
+  │   └── robot_pick.py         # Robot pick zone handler
+  └── robot/
+      ├── robot_controller.py   # Arm motion commands (Modbus/RTDE)
+      ├── vacuum_gripper.py     # Gripper control + pressure monitoring
+      ├── rack_manager.py       # Track slot occupancy + rack ID
+      └── pick_planner.py       # Convert bbox → tray XY → arm trajectory</code></pre>
+
+  <div class="callout callout-info">
+    <strong>Key Integration</strong>
+    <code>Detection.bbox</code> (pixels) &rarr; <code>tray_slot_xy</code> (millimeters) &rarr; <code>arm_joint_angles</code> (degrees). This uses a one-time camera-to-robot calibration (homography matrix).
+  </div>
+
+  <h3>17.3 Robot Events</h3>
+  <table>
+    <tr><th>Event</th><th>Trigger</th><th>Data</th></tr>
+    <tr><td><code>pick_commanded</code></td><td>WMS order received, camera detected part</td><td>sku, tray_slot, rack_id</td></tr>
+    <tr><td><code>pick_executing</code></td><td>Arm starts moving to tray</td><td>arm_position, vacuum_status</td></tr>
+    <tr><td><code>pick_gripped</code></td><td>Vacuum pressure confirms grip</td><td>vacuum_pressure, grip_quality</td></tr>
+    <tr><td><code>pick_rotating</code></td><td>Arm rotating profile to vertical</td><td>rotation_angle</td></tr>
+    <tr><td><code>pick_placed</code></td><td>Profile placed in rack slot</td><td>rack_slot_id, rack_id</td></tr>
+    <tr><td><code>pick_verified</code></td><td>Before/after detection confirms correct part</td><td>sku_confirmed, confidence</td></tr>
+    <tr><td><code>pick_failed</code></td><td>Any error in pick cycle</td><td>error_type, retry_count</td></tr>
+    <tr><td><code>rack_full</code></td><td>All slots occupied</td><td>rack_id, profile_count</td></tr>
+    <tr><td><code>rack_swapped</code></td><td>Operator replaced rack</td><td>old_rack_id, new_rack_id</td></tr>
+  </table>
+
+  <h3>17.4 Dashboard: Robot Status Panel</h3>
+  <ul>
+    <li>Real-time arm position visualization (joint angles)</li>
+    <li>Current pick order (SKU, qty remaining)</li>
+    <li>Vacuum pressure gauge</li>
+    <li>Rack slot occupancy grid (filled/empty)</li>
+    <li>Pick rate (picks/hour, current vs. average)</li>
+    <li>Error log with video timestamps</li>
+    <li>Manual override controls (pause, resume, home, e-stop)</li>
+  </ul>
+
+  <!-- ============================================================ -->
+  <h2 id="calibration" class="page-break">18. Calibration &amp; Setup</h2>
+
+  <h3>18.1 Camera-to-Robot Calibration</h3>
+  <p>One-time procedure to map camera pixels to robot arm coordinates:</p>
+  <ol>
+    <li>Place calibration target (checkerboard) on VLM tray</li>
+    <li>Camera captures image &rarr; detect checkerboard corners</li>
+    <li>Robot arm touches each corner &rarr; record arm XYZ position</li>
+    <li>Compute homography matrix (pixel &rarr; mm transformation)</li>
+    <li>Store calibration in <code>calibration.json</code></li>
+    <li>Re-calibrate if camera or arm is repositioned</li>
+  </ol>
+
+  <h3>18.2 Tray Mapping</h3>
+  <ul>
+    <li>Modula VLM trays have fixed divider positions</li>
+    <li>Map each divider configuration to slot coordinates</li>
+    <li>Store in <code>tray_configs.json</code> &mdash; one entry per tray layout</li>
+    <li>When Modula presents a tray, its ID identifies the configuration</li>
+  </ul>
+
+  <!-- ============================================================ -->
+  <h2 id="safety">19. Safety</h2>
+
+  <ul>
+    <li><strong>Cobot safety:</strong> UR20/FANUC CRX have built-in force/torque limiting &mdash; auto-stops on human contact (ISO 10218-1, ISO/TS 15066)</li>
+    <li><strong>No safety cage required</strong> &mdash; cobots are rated for human collaboration</li>
+    <li><strong>Swing clearance:</strong> 1.5m radius around arm base marked with yellow floor tape</li>
+    <li><strong>E-stop buttons:</strong> One on robot controller, one wall-mounted</li>
+    <li><strong>Vacuum fail-safe:</strong> If pressure drops during transit, arm stops and holds position</li>
+    <li><strong>Light indicator:</strong> Green (running), yellow (paused), red (error/e-stop)</li>
+    <li><strong>Speed reduction:</strong> 50% max speed when proximity sensor detects human</li>
+  </ul>
+
+  <!-- ============================================================ -->
+  <h2 id="cost-p2" class="page-break">20. Cost Estimate (Phase 2)</h2>
+
+  <table>
+    <tr><th>Component</th><th>Description</th><th style="text-align:right">Est. Cost (USD)</th></tr>
+    <tr><td>Robot arm</td><td>UR20 or FANUC CRX-25iA</td><td style="text-align:right">$50,000 &ndash; $58,000</td></tr>
+    <tr><td>Vacuum gripper</td><td>500mm bar + cups + venturi generator</td><td style="text-align:right">$2,000 &ndash; $3,500</td></tr>
+    <tr><td>Tool changer</td><td>Quick-change flange (for future grippers)</td><td style="text-align:right">$1,500 &ndash; $2,500</td></tr>
+    <tr><td>Vertical dolly racks</td><td>15-slot rack with sensors, 2 units</td><td style="text-align:right">$3,000 &ndash; $5,000</td></tr>
+    <tr><td>Slot occupancy sensors</td><td>15x optical sensors per rack</td><td style="text-align:right">$500 &ndash; $1,000</td></tr>
+    <tr><td>Mounting pedestal</td><td>Floor-mounted steel base</td><td style="text-align:right">$1,000 &ndash; $2,000</td></tr>
+    <tr><td>Pneumatic fittings</td><td>Air supply for vacuum</td><td style="text-align:right">$500 &ndash; $1,000</td></tr>
+    <tr><td>Safety accessories</td><td>E-stops, light stack, floor markings</td><td style="text-align:right">$1,000 &ndash; $1,500</td></tr>
+    <tr><td>Calibration tools</td><td>Checkerboard target + software</td><td style="text-align:right">$500</td></tr>
+    <tr><td>Software integration</td><td>robot_controller, pick_planner, rack_manager</td><td style="text-align:right">$5,000 &ndash; $8,000</td></tr>
+    <tr><td>Installation</td><td>Mechanical + electrical + testing</td><td style="text-align:right">$3,000 &ndash; $5,000</td></tr>
+    <tr style="background:#1f2937;color:white"><td colspan="2" style="padding:12px 14px;font-weight:700">TOTAL PHASE 2</td><td style="padding:12px 14px;text-align:right;font-weight:700;font-size:16px">$68,000 &ndash; $87,000</td></tr>
+  </table>
+
+  <!-- ============================================================ -->
+  <h2 id="prerequisites">21. Phase 2 Prerequisites</h2>
+  <ul>
+    <li>VLM Vision camera + YOLO detection running and validated at the target bay</li>
+    <li><code>metwall.onnx</code> model trained with &ge;90% mAP50</li>
+    <li>Zone type plugin system implemented (configurable zones)</li>
+    <li>Pick verification (before/after detection) working</li>
+  </ul>
+
+  <!-- ============================================================ -->
+  <h2 id="out-of-scope-p2">22. Out of Scope (Phase 2)</h2>
+  <ul>
+    <li>Multiple VLM bays (start with one, expand later)</li>
+    <li>Picking non-profile parts (screws, gaskets) &mdash; future gripper additions</li>
+    <li>Autonomous rack transport (operator rolls rack manually)</li>
+    <li>Integration with Modula&rsquo;s internal shuttle control</li>
+    <li>Multi-robot coordination (single arm per bay)</li>
+  </ul>
+
   <div class="footer">
-    <p>VLM Vision &mdash; Traceability Module Design Spec v1.0</p>
+    <p>VLM Vision &mdash; Traceability &amp; Robotic Picking Design Spec v1.0</p>
     <p>Metwall Design Solutions Inc. &mdash; Prepared by Dhar Solutions</p>
     <p>April 2026 &mdash; Confidential</p>
   </div>

@@ -10,19 +10,27 @@
   "projects": [
     {
       "idx": 1,
-      "id": "35344000000013084",
-      "name": "EmailAIAssistant",
+      "id": "40443000000131073",
+      "name": "VLM-Vision",
       "domain": {
-        "id": "10123132729",
-        "name": "emailaiassistant-919781692.development"
+        "id": "897289621",
+        "name": "vlm-vision-897289621.development"
       },
-      "timezone": "America/Adak",
+      "timezone": "America/Chicago",
       "env": [
         {
           "idx": 1,
-          "id": "919781692",
+          "id": "897289621",
           "name": "Development",
-          "type": 3
+          "type": 3,
+          "env_status": "Active",
+          "project_details": {
+            "project_name": "VLM-Vision",
+            "id": "40443000000131073",
+            "project_type": "Live"
+          },
+          "is_default": true,
+          "action_required": false
         }
       ]
     }

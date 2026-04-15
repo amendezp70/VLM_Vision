@@ -18,15 +18,28 @@ def make_mock_result():
     return [result]
 
 
-def test_detect_returns_list_of_detections():
-    with patch("local_agent.detector.YOLO") as mock_yolo_cls:
-        mock_model = MagicMock()
-        mock_model.return_value = make_mock_result()
-        mock_yolo_cls.return_value = mock_model
+def _make_detector_with_mock_yolo(mock_model):
+    """Create a Detector that uses the ultralytics backend with a mock model."""
+    with patch.dict("sys.modules", {"ultralytics": MagicMock()}):
+        import importlib
+        import local_agent.detector as det_mod
+        importlib.reload(det_mod)
 
-        detector = Detector(model_path="fake.onnx")
-        frame = np.zeros((480, 640, 3), dtype=np.uint8)
-        results = detector.detect(frame)
+    detector = det_mod.Detector.__new__(det_mod.Detector)
+    detector._backend = "ultralytics"
+    detector._model = mock_model
+    detector._session = None
+    detector._names = {}
+    return detector
+
+
+def test_detect_returns_list_of_detections():
+    mock_model = MagicMock()
+    mock_model.return_value = make_mock_result()
+    detector = _make_detector_with_mock_yolo(mock_model)
+
+    frame = np.zeros((480, 640, 3), dtype=np.uint8)
+    results = detector.detect(frame)
 
     assert len(results) == 1
     assert isinstance(results[0], Detection)
@@ -37,18 +50,16 @@ def test_detect_returns_list_of_detections():
 
 
 def test_detect_returns_empty_on_no_detections():
-    with patch("local_agent.detector.YOLO") as mock_yolo_cls:
-        mock_model = MagicMock()
-        empty_result = MagicMock()
-        empty_result.boxes.xyxy = []
-        empty_result.boxes.conf = []
-        empty_result.boxes.cls = []
-        empty_result.names = {}
-        mock_model.return_value = [empty_result]
-        mock_yolo_cls.return_value = mock_model
+    mock_model = MagicMock()
+    empty_result = MagicMock()
+    empty_result.boxes.xyxy = []
+    empty_result.boxes.conf = []
+    empty_result.boxes.cls = []
+    empty_result.names = {}
+    mock_model.return_value = [empty_result]
+    detector = _make_detector_with_mock_yolo(mock_model)
 
-        detector = Detector(model_path="fake.onnx")
-        frame = np.zeros((480, 640, 3), dtype=np.uint8)
-        results = detector.detect(frame)
+    frame = np.zeros((480, 640, 3), dtype=np.uint8)
+    results = detector.detect(frame)
 
     assert results == []

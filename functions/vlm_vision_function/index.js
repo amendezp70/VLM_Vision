@@ -6,6 +6,7 @@ import buildPicksRouter from "./routes/picks.js";
 import buildModelsRouter from "./routes/models.js";
 import buildAlertsRouter from "./routes/alerts.js";
 import buildInventoryRouter from "./routes/inventory.js";
+import buildVideoRouter from "./routes/video.js";
 
 const app = express();
 app.use(cors());
@@ -35,5 +36,9 @@ app.use("/picks", (req, res, next) => {
 app.use("/models", buildModelsRouter());
 app.use("/alerts", buildAlertsRouter());
 app.use("/inventory", buildInventoryRouter());
+app.use("/video", (req, res, next) => {
+  const router = buildVideoRouter(req.catalystApp);
+  router(req, res, next);
+});
 
 export default app;

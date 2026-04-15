@@ -95,7 +95,7 @@
     <li><a href="#s9">Robot Hardware</a></li>
     <li><a href="#s10">Pick Sequence</a></li>
     <li><a href="#s11">Software Integration</a></li>
-    <li><a href="#s12">Safety &amp; Cost Estimate</a></li>
+    <li><a href="#s12">Safety</a></li>
   </ol>
 </div>
 
@@ -316,10 +316,10 @@
 <h3>9.2 Robot Arm</h3>
 <p>6-axis cobot grips at center of gravity, rotates 90&deg; in air (horizontal &rarr; vertical), places directly into rack. No tilting table needed.</p>
 <table>
-  <tr><th>Model</th><th>Reach</th><th>Payload</th><th>Price</th><th>Fit</th></tr>
-  <tr><td><strong>UR20</strong></td><td>1750mm</td><td>20kg</td><td>~$58K</td><td>Best balance</td></tr>
-  <tr style="background:#f0fdf4"><td><strong>FANUC CRX-25iA</strong></td><td>1889mm</td><td>25kg</td><td>~$55K</td><td style="color:var(--green);font-weight:600">Most reach + headroom</td></tr>
-  <tr><td>FANUC CRX-20iA/L</td><td>1418mm</td><td>20kg</td><td>~$50K</td><td>Good fit</td></tr>
+  <tr><th>Model</th><th>Reach</th><th>Payload</th><th>Fit</th></tr>
+  <tr><td><strong>UR20</strong></td><td>1750mm</td><td>20kg</td><td>Best balance</td></tr>
+  <tr style="background:#f0fdf4"><td><strong>FANUC CRX-25iA</strong></td><td>1889mm</td><td>25kg</td><td style="color:var(--green);font-weight:600">Most reach + headroom</td></tr>
+  <tr><td>FANUC CRX-20iA/L</td><td>1418mm</td><td>20kg</td><td>Good fit</td></tr>
 </table>
 
 <h3>9.3 Vacuum Gripper</h3>
@@ -464,9 +464,9 @@
   <li>Manual controls (pause, resume, home, e-stop)</li>
 </ul>
 
-<h2 id="s12" class="page-break">12. Safety &amp; Cost Estimate</h2>
+<h2 id="s12" class="page-break">12. Safety</h2>
 
-<h3>12.1 Safety</h3>
+<h3>Safety Features</h3>
 <table>
   <tr><th>Feature</th><th>Implementation</th></tr>
   <tr><td>Cobot safety</td><td>Force/torque limiting, auto-stop on contact (ISO 10218-1)</td></tr>
@@ -478,22 +478,245 @@
   <tr><td>Speed reduction</td><td>50% when proximity sensor detects human</td></tr>
 </table>
 
-<h3>12.2 Cost Estimate</h3>
+
+<!-- ======== APPENDIX: RECOMMENDED STACK ======== -->
+
+<div style="background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 50%,#7c3aed 100%);color:#fff;padding:50px;margin:48px -32px 40px;text-align:center" class="page-break">
+  <div style="font-size:12px;text-transform:uppercase;letter-spacing:3px;opacity:.6;margin-bottom:8px">Appendix</div>
+  <h1 style="font-size:28px;font-weight:700;margin-bottom:8px">Recommended Hardware, Software &amp; Cloud Tools</h1>
+  <div style="font-size:15px;opacity:.8">Full Technology Stack for VLM Vision</div>
+</div>
+
+<h2 id="hw">A. Hardware — Cameras &amp; Compute</h2>
+
 <table>
-  <tr><th>Component</th><th>Description</th><th style="text-align:right">Est. Cost (USD)</th></tr>
-  <tr><td>Robot arm</td><td>UR20 or FANUC CRX-25iA</td><td style="text-align:right">$50,000 &ndash; $58,000</td></tr>
-  <tr><td>Vacuum gripper</td><td>500mm bar + cups + venturi</td><td style="text-align:right">$2,000 &ndash; $3,500</td></tr>
-  <tr><td>Tool changer</td><td>Quick-release flange</td><td style="text-align:right">$1,500 &ndash; $2,500</td></tr>
-  <tr><td>Dolly racks (&times;2)</td><td>15-slot with sensors</td><td style="text-align:right">$3,000 &ndash; $5,000</td></tr>
-  <tr><td>Slot sensors</td><td>15x optical per rack</td><td style="text-align:right">$500 &ndash; $1,000</td></tr>
-  <tr><td>Mounting pedestal</td><td>Floor-mounted steel base</td><td style="text-align:right">$1,000 &ndash; $2,000</td></tr>
-  <tr><td>Pneumatic fittings</td><td>Air supply for vacuum</td><td style="text-align:right">$500 &ndash; $1,000</td></tr>
-  <tr><td>Safety accessories</td><td>E-stops, light stack, markings</td><td style="text-align:right">$1,000 &ndash; $1,500</td></tr>
-  <tr><td>Calibration</td><td>Checkerboard + software</td><td style="text-align:right">$500</td></tr>
-  <tr><td>Software integration</td><td>robot_controller, planner, rack</td><td style="text-align:right">$5,000 &ndash; $8,000</td></tr>
-  <tr><td>Installation</td><td>Mechanical + electrical + testing</td><td style="text-align:right">$3,000 &ndash; $5,000</td></tr>
-  <tr style="background:var(--g8);color:#fff"><td colspan="2" style="padding:12px 14px;font-weight:700">TOTAL PHASE 2</td><td style="padding:12px 14px;text-align:right;font-weight:700;font-size:16px">$68,000 &ndash; $87,000</td></tr>
+  <tr><th>Component</th><th>Recommended</th><th>Alternative</th></tr>
+  <tr>
+    <td><strong>Bay Camera (4K)</strong></td>
+    <td>Logitech BRIO 4K</td>
+    <td>Logitech C930e, Intel RealSense D435</td>
+  </tr>
+  <tr>
+    <td><strong>Camera Mount</strong></td>
+    <td>Adjustable gooseneck arm with C-clamp</td>
+    <td>Custom bracket (aluminum extrusion)</td>
+  </tr>
+  <tr>
+    <td><strong>LED Ring Light</strong></td>
+    <td>Neewer 18&rdquo; LED Ring (bi-color)</td>
+    <td>Elgato Key Light, Godox SL60W</td>
+  </tr>
+  <tr>
+    <td><strong>Local PC (Edge Compute)</strong></td>
+    <td>Intel NUC 13 Pro (i7-1360P, 32GB RAM, 1TB NVMe)</td>
+    <td>Lenovo ThinkCentre M90q, Dell OptiPlex Micro</td>
+  </tr>
+  <tr>
+    <td><strong>GPU (optional)</strong></td>
+    <td>NVIDIA Jetson Orin Nano (8GB)</td>
+    <td>Intel Neural Compute Stick 2, or CPU-only</td>
+  </tr>
+  <tr>
+    <td><strong>USB Hub (powered)</strong></td>
+    <td>Anker 10-Port USB 3.0 Hub</td>
+    <td>Sabrent 7-Port USB Hub</td>
+  </tr>
+  <tr>
+    <td><strong>Network Switch</strong></td>
+    <td>TP-Link TL-SG108 (8-port Gigabit)</td>
+    <td>Netgear GS308</td>
+  </tr>
+  <tr>
+    <td><strong>UPS (Battery Backup)</strong></td>
+    <td>APC Back-UPS 1500VA</td>
+    <td>CyberPower CP1500AVRLCD</td>
+  </tr>
+  <tr>
+    <td><strong>Barcode Scanner (optional)</strong></td>
+    <td>Honeywell Voyager 1472g (USB)</td>
+    <td>Zebra DS2208, Symbol LS2208</td>
+  </tr>
 </table>
+
+<h3>Shopping List (Process 1 + Process 3)</h3>
+<table>
+  <tr><th>Item</th><th>Qty</th></tr>
+  <tr><td>4K Camera (Logitech BRIO)</td><td>2</td></tr>
+  <tr><td>Camera mount (gooseneck + C-clamp)</td><td>2</td></tr>
+  <tr><td>LED Ring Light (Neewer 18&rdquo;)</td><td>2</td></tr>
+  <tr><td>Edge PC (Intel NUC 13 Pro i7, 32GB RAM, 1TB NVMe)</td><td>1</td></tr>
+  <tr><td>Powered USB Hub (Anker 10-port)</td><td>1</td></tr>
+  <tr><td>Gigabit Network Switch (TP-Link 8-port)</td><td>1</td></tr>
+  <tr><td>UPS Battery Backup (APC 1500VA)</td><td>1</td></tr>
+  <tr><td>Ethernet cabling + USB cables</td><td>1 lot</td></tr>
+</table>
+
+<h2 id="sw" class="page-break">B. Software Stack</h2>
+
+<h3>B.1 Local Agent (Python)</h3>
+<table>
+  <tr><th>Category</th><th>Technology</th><th>Version</th><th>Purpose</th></tr>
+  <tr><td>Language</td><td><strong>Python</strong></td><td>3.11+</td><td>All local agent code</td></tr>
+  <tr><td>Web Framework</td><td><strong>FastAPI</strong></td><td>0.111+</td><td>WebSocket server, MJPEG streaming, REST API</td></tr>
+  <tr><td>ASGI Server</td><td><strong>Uvicorn</strong></td><td>0.29+</td><td>Runs FastAPI in production</td></tr>
+  <tr><td>Computer Vision</td><td><strong>OpenCV (opencv-python)</strong></td><td>4.9+</td><td>Camera capture, frame processing, H.264 recording</td></tr>
+  <tr><td>AI Inference</td><td><strong>ONNX Runtime</strong></td><td>1.17+</td><td>YOLOv8 model inference (CPU)</td></tr>
+  <tr><td>AI Training</td><td><strong>Ultralytics</strong></td><td>8.2+</td><td>YOLOv8 model training + export (dev only)</td></tr>
+  <tr><td>HTTP Client</td><td><strong>httpx</strong></td><td>0.27+</td><td>Cloud sync, Modula WMS communication</td></tr>
+  <tr><td>Database</td><td><strong>SQLite3</strong></td><td>Built-in</td><td>Offline event queue, video segment tracking</td></tr>
+  <tr><td>Barcode Decoding</td><td><strong>pyzbar</strong></td><td>0.1.9+</td><td>Decode barcodes from camera frames (optional)</td></tr>
+  <tr><td>Testing</td><td><strong>pytest + pytest-asyncio</strong></td><td>8.2+ / 0.23+</td><td>Unit and integration tests</td></tr>
+  <tr><td>Packaging</td><td><strong>PyInstaller</strong></td><td>6.19+</td><td>Standalone Mac/Windows executable</td></tr>
+</table>
+
+<h3>B.2 Robot Control (Phase 2)</h3>
+<table>
+  <tr><th>Category</th><th>Technology</th><th>Purpose</th></tr>
+  <tr><td>Robot Protocol</td><td><strong>UR RTDE</strong> (Real-Time Data Exchange)</td><td>Send motion commands to UR20 at 500Hz</td></tr>
+  <tr><td>Python UR Library</td><td><strong>ur_rtde</strong> (pip install ur_rtde)</td><td>Python wrapper for UR RTDE protocol</td></tr>
+  <tr><td>Alternative Protocol</td><td><strong>Modbus TCP</strong></td><td>Standard industrial protocol (FANUC CRX)</td></tr>
+  <tr><td>Python Modbus</td><td><strong>pymodbus</strong></td><td>Modbus TCP/IP client for robot communication</td></tr>
+  <tr><td>Calibration</td><td><strong>OpenCV (cv2.findChessboardCorners)</strong></td><td>Camera-to-robot homography calibration</td></tr>
+  <tr><td>NumPy</td><td><strong>numpy</strong></td><td>Matrix math for coordinate transforms</td></tr>
+  <tr><td>Trajectory Planning</td><td><strong>Custom (pick_planner.py)</strong></td><td>Bbox &rarr; tray XY &rarr; joint angles</td></tr>
+</table>
+
+<h3>B.3 Cloud Functions (Node.js)</h3>
+<table>
+  <tr><th>Category</th><th>Technology</th><th>Version</th><th>Purpose</th></tr>
+  <tr><td>Runtime</td><td><strong>Node.js</strong></td><td>18 LTS</td><td>Catalyst Cloud Functions runtime</td></tr>
+  <tr><td>Framework</td><td><strong>Express.js</strong></td><td>4.x</td><td>REST API routing</td></tr>
+  <tr><td>Catalyst SDK</td><td><strong>zcatalyst-sdk-node</strong></td><td>Latest</td><td>Zoho Catalyst API (datastore, file store, auth)</td></tr>
+  <tr><td>Zoho API</td><td><strong>Zoho Inventory API v1</strong></td><td>REST</td><td>Inventory adjustments on pick events</td></tr>
+  <tr><td>Notifications</td><td><strong>Zoho Cliq Webhooks</strong></td><td>REST</td><td>Real-time alerts for wrong/short picks</td></tr>
+</table>
+
+<h3>B.4 Admin Dashboard (Frontend)</h3>
+<table>
+  <tr><th>Category</th><th>Technology</th><th>Purpose</th></tr>
+  <tr><td>UI</td><td><strong>HTML5 + Vanilla JS</strong> (current)</td><td>Admin dashboard, bay overlay</td></tr>
+  <tr><td>Future upgrade</td><td><strong>React + Vite + Tailwind CSS</strong></td><td>If dashboard complexity grows (robot panel, timeline)</td></tr>
+  <tr><td>Video Playback</td><td><strong>HTML5 &lt;video&gt;</strong></td><td>In-browser evidence clip playback</td></tr>
+  <tr><td>Real-time</td><td><strong>WebSocket</strong></td><td>Live bay status, robot state, zone events</td></tr>
+  <tr><td>Charts</td><td><strong>Chart.js</strong> (optional)</td><td>Pick rate graphs, statistics</td></tr>
+</table>
+
+<h2 id="cloud" class="page-break">C. Cloud &amp; Infrastructure</h2>
+
+<h3>C.1 Zoho Catalyst (Primary Cloud)</h3>
+<table>
+  <tr><th>Service</th><th>Usage</th></tr>
+  <tr>
+    <td><strong>Catalyst Cloud Functions</strong></td>
+    <td>REST API backend (picks, events, video, evidence, models)</td>
+  </tr>
+  <tr>
+    <td><strong>Catalyst Datastore</strong></td>
+    <td>Tables: pick_events, video_segments, evidence_clips</td>
+  </tr>
+  <tr>
+    <td><strong>Catalyst File Store</strong></td>
+    <td>Video segments (5-min MP4), evidence clips, ONNX models</td>
+  </tr>
+  <tr>
+    <td><strong>Catalyst Static Hosting</strong></td>
+    <td>Admin dashboard web app</td>
+  </tr>
+  <tr>
+    <td><strong>Catalyst Credential Store</strong></td>
+    <td>OAuth tokens for Zoho APIs</td>
+  </tr>
+</table>
+
+<h3>C.2 Cloud Storage Volume Estimate</h3>
+<table>
+  <tr><th>Content</th><th>Volume</th></tr>
+  <tr><td>Video segments (2 cameras, 60-day rolling)</td><td>~1.1 TB</td></tr>
+  <tr><td>Evidence clips (growing, indefinite)</td><td>~5 GB/month</td></tr>
+  <tr><td>ONNX models</td><td>&lt;100 MB</td></tr>
+  <tr><td>Datastore (metadata)</td><td>&lt;1 GB</td></tr>
+</table>
+
+<h3>C.3 Zoho Ecosystem Integration</h3>
+<table>
+  <tr><th>Zoho Service</th><th>Integration</th><th>Direction</th></tr>
+  <tr><td><strong>Zoho Inventory</strong></td><td>Stock adjustments after verified picks</td><td>App &rarr; Zoho</td></tr>
+  <tr><td><strong>Zoho Cliq</strong></td><td>Real-time alerts (wrong pick, robot error, rack full)</td><td>App &rarr; Cliq</td></tr>
+  <tr><td><strong>Zoho Analytics</strong> (future)</td><td>Pick performance dashboards, robot efficiency</td><td>App &rarr; Analytics</td></tr>
+  <tr><td><strong>Zoho Creator</strong> (future)</td><td>Custom admin forms for zone/camera config</td><td>Bidirectional</td></tr>
+</table>
+
+<h2 id="ai-tools" class="page-break">D. AI &amp; Model Training Tools</h2>
+
+<table>
+  <tr><th>Tool</th><th>Purpose</th><th>License</th></tr>
+  <tr>
+    <td><strong>Roboflow</strong></td>
+    <td>Image labeling, dataset management, augmentation, cloud training</td>
+    <td>SaaS (free + paid tiers)</td>
+  </tr>
+  <tr>
+    <td><strong>Google Colab</strong></td>
+    <td>Alternative training on T4 GPU</td>
+    <td>Free + Pro tiers</td>
+  </tr>
+  <tr>
+    <td><strong>Ultralytics YOLOv8</strong></td>
+    <td>Model architecture, training framework, ONNX export</td>
+    <td>Open source (AGPL-3.0)</td>
+  </tr>
+  <tr>
+    <td><strong>ONNX Runtime</strong></td>
+    <td>Cross-platform inference engine (CPU/GPU)</td>
+    <td>Open source (MIT)</td>
+  </tr>
+  <tr>
+    <td><strong>LabelImg</strong> (alternative)</td>
+    <td>Offline bounding box annotation tool</td>
+    <td>Open source</td>
+  </tr>
+</table>
+
+<h2 id="dev-tools">E. Development &amp; DevOps Tools</h2>
+
+<table>
+  <tr><th>Tool</th><th>Purpose</th></tr>
+  <tr><td><strong>VS Code</strong></td><td>Primary IDE for Python + Node.js development</td></tr>
+  <tr><td><strong>Git + GitHub</strong></td><td>Version control, code review, CI/CD</td></tr>
+  <tr><td><strong>Docker</strong></td><td>Containerized deployment for Linux/factory PCs</td></tr>
+  <tr><td><strong>PyInstaller</strong></td><td>Standalone Mac/Windows executables</td></tr>
+  <tr><td><strong>Catalyst CLI</strong></td><td>Deploy cloud functions: <code>catalyst deploy</code></td></tr>
+  <tr><td><strong>Postman / Insomnia</strong></td><td>API testing for cloud functions + Modula WMS</td></tr>
+  <tr><td><strong>OBS Studio</strong></td><td>Camera testing + training image capture</td></tr>
+</table>
+
+<h2 id="robot-hw">F. Robot Hardware (Phase 2) &mdash; Detailed BOM</h2>
+
+<table>
+  <tr><th>Part</th><th>Qty</th><th>Supplier / Source</th></tr>
+  <tr><td>UR20 Collaborative Robot Arm</td><td>1</td><td>Universal Robots (distributor)</td></tr>
+  <tr><td>Vacuum Bar Kit (500mm, 4 cups)</td><td>1</td><td>Piab / Schmalz / Schunk</td></tr>
+  <tr><td>Quick Tool Changer (ISO flange)</td><td>1</td><td>ATI Industrial / Schunk</td></tr>
+  <tr><td>Vertical Dolly Rack Assembly</td><td>2</td><td>Custom metal fabrication</td></tr>
+  <tr><td>Optical Slot Sensors (per rack)</td><td>30</td><td>Banner Engineering / Keyence</td></tr>
+  <tr><td>Vacuum Pressure Transducer</td><td>1</td><td>SMC / Danfoss</td></tr>
+  <tr><td>Venturi Vacuum Generator</td><td>1</td><td>Piab / SMC</td></tr>
+  <tr><td>Pneumatic Fittings + Tubing</td><td>1 lot</td><td>SMC / Festo</td></tr>
+  <tr><td>Floor Mounting Pedestal (steel)</td><td>1</td><td>Custom fabrication</td></tr>
+  <tr><td>E-Stop Button (wall mount)</td><td>1</td><td>Siemens / Eaton</td></tr>
+  <tr><td>LED Light Stack (G/Y/R)</td><td>1</td><td>Patlite / Werma</td></tr>
+  <tr><td>Proximity Sensor (human detect)</td><td>1</td><td>Banner / Sick</td></tr>
+  <tr><td>Electrical Enclosure + I/O</td><td>1</td><td>Phoenix Contact / Siemens</td></tr>
+  <tr><td>Network Cabling (M12/Ethernet)</td><td>1 lot</td><td>Belden / Molex</td></tr>
+  <tr><td>Floor Tape + Safety Signs</td><td>1 set</td><td>3M / Brady</td></tr>
+  <tr><td>Calibration Checkerboard</td><td>1</td><td>Amazon / custom print</td></tr>
+  <tr><td>Misc. Hardware (bolts, brackets)</td><td>1 lot</td><td>&mdash;</td></tr>
+</table>
+
+<div class="callout callout-info">
+  <strong>All Core Software is Open Source</strong>
+  Python, OpenCV, ONNX Runtime, FastAPI, PyInstaller, Docker, YOLOv8 &mdash; all open source. Zoho Catalyst provides cloud infrastructure. Roboflow handles AI model training.
+</div>
 
 <!-- FOOTER -->
 <div class="footer">

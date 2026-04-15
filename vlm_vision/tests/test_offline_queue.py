@@ -1,4 +1,3 @@
-import os
 import pytest
 from local_agent.offline_queue import OfflineQueue
 from local_agent.models import PickEvent
