@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VLM Vision — Pick Verification, Video Evidence & Robotic Picking</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+  :root{--primary:#1a56db;--primary-light:#e8effc;--dark:#111827;--g8:#1f2937;--g6:#4b5563;--g4:#9ca3af;--g2:#e5e7eb;--g1:#f3f4f6;--green:#059669;--red:#dc2626;--yellow:#d97706;--purple:#7c3aed;--cyan:#0891b2}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Inter',-apple-system,sans-serif;color:var(--dark);line-height:1.7;font-size:14px;background:#fff}
+  @media print{
+    body{font-size:11pt;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}
+    .no-print{display:none!important}.page-break{page-break-before:always}
+    h2{page-break-after:avoid}table{page-break-inside:avoid}
+    .cover,.process-card,.zone-box,.entity-box,.callout,.arch-box,th,tr:nth-child(even) td,code,pre{-webkit-print-color-adjust:exact!important}
+  }
+  .cover{background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 50%,#1a56db 100%);color:#fff;padding:80px 60px;min-height:50vh;display:flex;flex-direction:column;justify-content:center}
+  .cover h1{font-size:34px;font-weight:700;margin-bottom:12px}.cover .subtitle{font-size:18px;opacity:.85;margin-bottom:40px}.cover .meta{font-size:13px;opacity:.6;line-height:2}.cover .meta strong{opacity:1}
+  .download-bar{position:fixed;top:0;left:0;right:0;background:var(--dark);padding:10px 24px;display:flex;align-items:center;justify-content:space-between;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+  .download-bar span{color:#fff;font-size:13px;font-weight:500}
+  .download-btn{background:var(--primary);color:#fff;border:none;padding:8px 20px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer}.download-btn:hover{background:#1e40af}
+  body{padding-top:50px}.content{max-width:820px;margin:0 auto;padding:40px 32px}
+  h2{font-size:22px;font-weight:700;color:var(--dark);border-bottom:3px solid var(--primary);padding-bottom:8px;margin:48px 0 20px}
+  h3{font-size:17px;font-weight:600;margin:28px 0 12px;color:var(--g8)}h4{font-size:14px;font-weight:600;margin:20px 0 8px;color:var(--g6)}
+  p{margin-bottom:14px}ul,ol{margin:0 0 16px 24px}li{margin-bottom:6px}
+  .toc{background:var(--g1);border:1px solid var(--g2);border-radius:8px;padding:24px 32px;margin:32px 0}
+  .toc h3{margin-top:0;color:var(--dark)}.toc ol{list-style:none;counter-reset:toc;margin:0;padding:0}
+  .toc>ol>li{counter-increment:toc;margin-bottom:6px}.toc>ol>li::before{content:counter(toc)".";font-weight:600;color:var(--primary);margin-right:8px}
+  .toc a{color:var(--dark);text-decoration:none}.toc a:hover{color:var(--primary)}
+  table{width:100%;border-collapse:collapse;margin:16px 0;font-size:13px}
+  th{background:var(--g8);color:#fff;padding:10px 14px;text-align:left;font-weight:600}
+  td{padding:10px 14px;border-bottom:1px solid var(--g2)}tr:nth-child(even) td{background:var(--g1)}
+  .callout{border-radius:6px;padding:14px 18px;margin:16px 0;font-size:13px}
+  .callout-info{background:var(--primary-light);border-left:4px solid var(--primary)}
+  .callout-success{background:#d1fae5;border-left:4px solid var(--green)}
+  .callout-warning{background:#fef3c7;border-left:4px solid var(--yellow)}
+  .callout-danger{background:#fee2e2;border-left:4px solid var(--red)}
+  .callout strong{display:block;margin-bottom:4px}
+  code{font-family:'JetBrains Mono',monospace;background:var(--g1);padding:2px 6px;border-radius:3px;font-size:12px;color:var(--g8)}
+  pre{background:var(--dark);color:#e5e7eb;padding:16px 20px;border-radius:6px;overflow-x:auto;margin:12px 0 16px;font-size:12px;line-height:1.6}
+  pre code{background:none;padding:0;color:inherit}
+  .process-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin:16px 0}
+  .process-card{border-radius:8px;padding:14px;color:#fff;font-size:12px}
+  .process-card h4{color:#fff;margin:0 0 8px;font-size:13px}.process-card ul{margin:0;padding-left:16px}.process-card li{margin-bottom:4px;opacity:.9}
+  .arch-box{background:var(--g1);border:2px solid var(--g2);border-radius:8px;padding:16px;margin:12px 0}
+  .footer{text-align:center;padding:40px 20px;color:var(--g4);font-size:12px;border-top:1px solid var(--g2);margin-top:60px}
+</style>
+</head>
+<body>
+
+<div class="download-bar no-print">
+  <span>VLM Vision &mdash; Focused Design Spec</span>
+  <button class="download-btn" onclick="window.print()">Save as PDF</button>
+</div>
+
+<!-- COVER -->
+<div class="cover">
+  <h1>VLM Vision</h1>
+  <div class="subtitle">Pick Verification, Video Evidence &amp; Robotic Picking</div>
+  <div class="meta">
+    <strong>Prepared for:</strong> Metwall Design Solutions Inc.<br>
+    <strong>Scope:</strong> Process 1 (Bay Agent) + Process 3 (Video Recorder) + Phase 2 (Cobot Arm)<br>
+    <strong>AI Model:</strong> YOLOv8n &rarr; ONNX &mdash; 150 SKU classes<br>
+    <strong>Robot:</strong> UR20 / FANUC CRX-25iA &mdash; 6-axis cobot with vacuum gripper<br>
+    <strong>Cloud:</strong> Zoho Catalyst (Datastore + File Store + Functions)<br>
+    <strong>Version:</strong> 1.0 &mdash; April 2026
+  </div>
+</div>
+
+<div class="content">
+
+<!-- TOC -->
+<div class="toc">
+  <h3>Table of Contents</h3>
+  <h3 style="margin-top:0;font-size:13px;color:var(--g6)">Part A &mdash; System Overview</h3>
+  <ol>
+    <li><a href="#s1">Purpose &amp; Business Goals</a></li>
+    <li><a href="#s2">System Architecture</a></li>
+  </ol>
+  <h3 style="font-size:13px;color:var(--g6)">Part B &mdash; Process 1: VLM Bay Agent (Existing)</h3>
+  <ol start="3">
+    <li><a href="#s3">Architecture &amp; Modules</a></li>
+    <li><a href="#s4">Detection &amp; Pick Verification</a></li>
+    <li><a href="#s5">Configuration &amp; Integration</a></li>
+  </ol>
+  <h3 style="font-size:13px;color:var(--g6)">Part C &mdash; Process 3: Video Recorder (New)</h3>
+  <ol start="6">
+    <li><a href="#s6">Video Pipeline</a></li>
+    <li><a href="#s7">Storage Estimates &amp; Retention</a></li>
+    <li><a href="#s8">Resilience &amp; Offline Operation</a></li>
+  </ol>
+  <h3 style="font-size:13px;color:var(--g6)">Part D &mdash; Phase 2: Robotic Picking (New)</h3>
+  <ol start="9">
+    <li><a href="#s9">Robot Hardware</a></li>
+    <li><a href="#s10">Pick Sequence</a></li>
+    <li><a href="#s11">Software Integration</a></li>
+    <li><a href="#s12">Safety &amp; Cost Estimate</a></li>
+  </ol>
+</div>
+
+<!-- ======== PART A ======== -->
+
+<h2 id="s1">1. Purpose &amp; Business Goals</h2>
+<p>VLM Vision is an AI-powered system for Metwall&rsquo;s Modula VLM warehouse operations. It combines real-time pick verification, continuous video evidence, and automated robotic picking.</p>
+<ul>
+  <li><strong>Verify picks</strong> &mdash; AI camera confirms the correct part is taken from the correct tray</li>
+  <li><strong>Video evidence</strong> &mdash; Continuous recording creates timestamped proof for dispute resolution</li>
+  <li><strong>Automate picking</strong> &mdash; Cobot arm replaces manual picking of 3m aluminum profiles (2.5&ndash;3.75x throughput)</li>
+  <li><strong>Offline resilience</strong> &mdash; System never stops; data syncs when connection restores</li>
+</ul>
+
+<h2 id="s2" class="page-break">2. System Architecture</h2>
+<p>Three separate processes sharing a core library, backed by Zoho Catalyst cloud.</p>
+
+<div class="process-grid">
+  <div class="process-card" style="background:#1a56db">
+    <h4>Process 1 &mdash; Bay Agent</h4>
+    <p style="opacity:.7;font-style:italic;margin-bottom:6px">Existing</p>
+    <ul><li>CameraAgent (bay cameras)</li><li>Detector (metwall.onnx)</li><li>PickVerifier</li><li>ModulaClient</li><li>OfflineQueue + CloudSync</li><li>WebSocket overlay</li></ul>
+  </div>
+  <div class="process-card" style="background:#d97706">
+    <h4>Process 3 &mdash; Video Recorder</h4>
+    <p style="opacity:.7;font-style:italic;margin-bottom:6px">New</p>
+    <ul><li>MultiCameraRecorder</li><li>VideoSegmenter (5-min)</li><li>CloudUploader</li><li>RetentionManager (60 days)</li><li>ClipExtractor (&plusmn;30s)</li></ul>
+  </div>
+  <div class="process-card" style="background:#059669">
+    <h4>Phase 2 &mdash; Robotic Picking</h4>
+    <p style="opacity:.7;font-style:italic;margin-bottom:6px">New</p>
+    <ul><li>6-axis cobot arm (UR20)</li><li>Vacuum gripper bar</li><li>Pick planner (bbox&rarr;XY&rarr;trajectory)</li><li>Rack manager</li><li>Before/after verification</li></ul>
+  </div>
+</div>
+
+<div class="arch-box">
+  <h4 style="margin-top:0">Shared Core Library</h4>
+  <p style="margin-bottom:0"><code>camera_agent</code> &middot; <code>detector</code> &middot; <code>offline_queue</code> &middot; <code>cloud_sync_client</code> &middot; <code>config</code> &middot; <code>models</code> &middot; <code>display_server</code></p>
+</div>
+
+<div class="arch-box" style="border-left:4px solid var(--purple)">
+  <h4 style="margin-top:0;color:var(--purple)">Zoho Catalyst Cloud</h4>
+  <p style="margin-bottom:0"><strong>Datastore:</strong> pick_events, video_segments, evidence_clips &nbsp;|&nbsp; <strong>File Store:</strong> video segments, clips, ONNX models &nbsp;|&nbsp; <strong>Functions:</strong> picks sync, model registry, video management</p>
+</div>
+
+<!-- ======== PART B ======== -->
+
+<h2 id="s3" class="page-break">3. Architecture &amp; Modules</h2>
+
+<table>
+  <tr><th>Module</th><th>File</th><th>Responsibility</th></tr>
+  <tr><td>CameraAgent</td><td><code>camera_agent.py</code></td><td>Captures frames from USB camera, manages frame queue</td></tr>
+  <tr><td>Detector</td><td><code>detector.py</code></td><td>Dual-backend YOLO inference (ultralytics + onnxruntime)</td></tr>
+  <tr><td>PickVerifier</td><td><code>pick_verifier.py</code></td><td>Before/after detection comparison, pick result</td></tr>
+  <tr><td>ModulaClient</td><td><code>modula_client.py</code></td><td>HTTP client for Modula WMS (fetch order, confirm pick)</td></tr>
+  <tr><td>OfflineQueue</td><td><code>offline_queue.py</code></td><td>SQLite queue for unsynced pick events</td></tr>
+  <tr><td>CloudSyncClient</td><td><code>cloud_sync_client.py</code></td><td>HTTP client for Catalyst cloud endpoints</td></tr>
+  <tr><td>ModelRegistry</td><td><code>model_registry.py</code></td><td>Polls cloud for ONNX updates, hot-swaps detector</td></tr>
+  <tr><td>SyncWorker</td><td><code>sync_worker.py</code></td><td>Background daemon (picks every 30s, models every 1hr)</td></tr>
+  <tr><td>DisplayServer</td><td><code>display_server.py</code></td><td>FastAPI: WebSocket + MJPEG endpoints</td></tr>
+  <tr><td>FrameStore</td><td><code>frame_store.py</code></td><td>Thread-safe frame buffer per bay</td></tr>
+  <tr><td>Config</td><td><code>config.py</code></td><td>Configuration from environment variables</td></tr>
+</table>
+
+<h2 id="s4">4. Detection &amp; Pick Verification</h2>
+
+<h3>Camera Setup</h3>
+<ul>
+  <li>Platform-aware: AVFoundation (macOS), DirectShow (Windows), V4L2 (Linux)</li>
+  <li>Resolution tiers: 4K &rarr; 1080p &rarr; 720p (auto-fallback)</li>
+  <li>Frame rate: 10 FPS default, configurable</li>
+</ul>
+
+<h3>Detection (metwall.onnx)</h3>
+<table>
+  <tr><th>Parameter</th><th>Value</th></tr>
+  <tr><td>Model</td><td>YOLOv8n, 150 SKU classes</td></tr>
+  <tr><td>Class format</td><td><code>SKU__color</code> (e.g., <code>STL-P-100-BK__black</code>)</td></tr>
+  <tr><td>Input</td><td>640&times;640px</td></tr>
+  <tr><td>Confidence threshold</td><td>0.25</td></tr>
+  <tr><td>IOU threshold</td><td>0.45</td></tr>
+</table>
+
+<h3>Pick Verification Flow</h3>
+<ol>
+  <li>Modula WMS sends active pick order</li>
+  <li>Camera captures &ldquo;before&rdquo; frame &rarr; run detection</li>
+  <li>Wait 1.5 seconds for pick action</li>
+  <li>Capture &ldquo;after&rdquo; frame &rarr; run detection</li>
+  <li>Compare SKU counts: <strong style="color:var(--green)">correct</strong>, <strong style="color:var(--yellow)">short</strong>, or <strong style="color:var(--red)">wrong</strong></li>
+  <li>PickEvent queued &rarr; synced to cloud</li>
+</ol>
+
+<h2 id="s5">5. Configuration &amp; Integration</h2>
+
+<table>
+  <tr><th>Variable</th><th>Default</th><th>Description</th></tr>
+  <tr><td>MODEL_PATH</td><td>(required)</td><td>Path to metwall.onnx</td></tr>
+  <tr><td>CAMERA_BAY1</td><td>0</td><td>Camera device ID for bay 1</td></tr>
+  <tr><td>CAMERA_BAY2</td><td>1</td><td>Camera device ID for bay 2</td></tr>
+  <tr><td>MODULA_WMS_URL</td><td>(required)</td><td>Modula WMS API base URL</td></tr>
+  <tr><td>CLOUD_SYNC_URL</td><td>(required)</td><td>Catalyst cloud endpoint</td></tr>
+  <tr><td>DETECTION_FPS</td><td>10</td><td>Detection loop frame rate</td></tr>
+  <tr><td>WEBSOCKET_PORT</td><td>8765</td><td>Display overlay port</td></tr>
+  <tr><td>DB_PATH</td><td>picks.db</td><td>SQLite offline queue</td></tr>
+  <tr><td>SYNC_INTERVAL_SEC</td><td>30</td><td>Cloud sync frequency</td></tr>
+  <tr><td>MODEL_POLL_INTERVAL_SEC</td><td>3600</td><td>Model update check (1hr)</td></tr>
+</table>
+
+<div class="callout callout-success">
+  <strong>Resilience</strong>
+  Detection always continues even without internet. Unsynced picks stay in SQLite and retry every 30 seconds. Zero data loss during outages.
+</div>
+
+<!-- ======== PART C ======== -->
+
+<div style="background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 50%,#d97706 100%);color:#fff;padding:50px;margin:48px -32px 40px;text-align:center" class="page-break">
+  <div style="font-size:12px;text-transform:uppercase;letter-spacing:3px;opacity:.6;margin-bottom:8px">Part C</div>
+  <h1 style="font-size:28px;font-weight:700;margin-bottom:8px">Process 3: Video Recorder</h1>
+  <div style="font-size:15px;opacity:.8">Continuous Recording &amp; Evidence Clip Extraction</div>
+</div>
+
+<h2 id="s6">6. Video Pipeline</h2>
+<p>Three-stage flow: record locally &rarr; upload to cloud &rarr; extract clips on demand.</p>
+
+<div class="arch-box" style="border-left:4px solid var(--yellow)">
+  <h4 style="margin-top:0;color:var(--yellow)">Stage 1: Local Recording</h4>
+  <p>H.264 via OpenCV VideoWriter. 1920&times;1080 at 15 FPS (~2 Mbps). Split into 5-minute segments. Filename: <code>cam{id}_{YYYY-MM-DD}_{HH-mm-ss}.mp4</code></p>
+</div>
+<div class="arch-box" style="border-left:4px solid var(--purple)">
+  <h4 style="margin-top:0;color:var(--purple)">Stage 2: Cloud Upload</h4>
+  <p>Background queue uploads completed segments to Catalyst File Store. Retry with exponential backoff on failure. Non-blocking to recording.</p>
+</div>
+<div class="arch-box" style="border-left:4px solid var(--cyan)">
+  <h4 style="margin-top:0;color:var(--cyan)">Stage 3: Evidence Clip Extraction</h4>
+  <p>On-demand: user searches event &rarr; system locates video_segment + offset &rarr; extracts &plusmn;30s clip &rarr; uploaded and retained indefinitely.</p>
+</div>
+
+<table>
+  <tr><th>Module</th><th>File</th><th>Responsibility</th></tr>
+  <tr><td>MultiCameraRecorder</td><td><code>video/multi_camera_recorder.py</code></td><td>Continuous H.264 capture from all cameras</td></tr>
+  <tr><td>VideoSegmenter</td><td><code>video/video_segmenter.py</code></td><td>Splits into 5-minute MP4 segments</td></tr>
+  <tr><td>CloudUploader</td><td><code>video/cloud_uploader.py</code></td><td>Background upload queue with retry</td></tr>
+  <tr><td>RetentionManager</td><td><code>video/retention_manager.py</code></td><td>60-day retention, auto-delete expired</td></tr>
+  <tr><td>ClipExtractor</td><td><code>video/clip_extractor.py</code></td><td>On-demand &plusmn;30s evidence clips</td></tr>
+</table>
+
+<h2 id="s7">7. Storage Estimates &amp; Retention</h2>
+
+<table>
+  <tr><th>Parameter</th><th>Value</th><th>Notes</th></tr>
+  <tr><td>Cameras</td><td>2 (bay cameras)</td><td>Expandable</td></tr>
+  <tr><td>Resolution</td><td>1920&times;1080</td><td>4K optional</td></tr>
+  <tr><td>Frame rate</td><td>15 FPS</td><td>Configurable</td></tr>
+  <tr><td>Per camera per hour</td><td>~900 MB</td><td>2 Mbps H.264</td></tr>
+  <tr><td><strong>2 cameras &times; 10hr shift</strong></td><td><strong>~18 GB/day</strong></td><td></td></tr>
+  <tr><td><strong>60-day retention</strong></td><td><strong>~1.1 TB</strong></td><td>Rolling window</td></tr>
+  <tr><td>Segment size (5 min)</td><td>~75 MB</td><td>Manageable upload</td></tr>
+  <tr><td>Evidence clip (60s)</td><td>~15 MB</td><td>Quick to share</td></tr>
+</table>
+
+<table>
+  <tr><th>Content</th><th>Location</th><th>Duration</th></tr>
+  <tr><td>Video segments</td><td>Cloud (Catalyst File Store)</td><td>60 days, auto-deleted</td></tr>
+  <tr><td>Video segments</td><td>Local (factory machine)</td><td>24 hours, cleaned after upload</td></tr>
+  <tr><td>Evidence clips</td><td>Cloud</td><td><strong>Indefinite</strong> (disputes never expire)</td></tr>
+  <tr><td>Event metadata</td><td>Catalyst Datastore</td><td><strong>Forever</strong></td></tr>
+</table>
+
+<h2 id="s8">8. Resilience &amp; Offline Operation</h2>
+<ul>
+  <li>Recording <strong>never stops</strong>, even if cloud is unreachable</li>
+  <li>Segments queue locally and upload when connection restores</li>
+  <li>24-hour local buffer ensures no data loss during outages</li>
+  <li>Same offline-queue retry pattern as existing pick sync</li>
+</ul>
+
+<table>
+  <tr><th>Variable</th><th>Default</th><th>Description</th></tr>
+  <tr><td>VIDEO_ENABLED</td><td>true</td><td>Enable video recording</td></tr>
+  <tr><td>VIDEO_FPS</td><td>15</td><td>Recording frame rate</td></tr>
+  <tr><td>VIDEO_RESOLUTION</td><td>1920x1080</td><td>Recording resolution</td></tr>
+  <tr><td>VIDEO_SEGMENT_MINUTES</td><td>5</td><td>Segment duration</td></tr>
+  <tr><td>VIDEO_LOCAL_BUFFER_HOURS</td><td>24</td><td>Local retention</td></tr>
+  <tr><td>VIDEO_RETENTION_DAYS</td><td>60</td><td>Cloud retention</td></tr>
+  <tr><td>VIDEO_CODEC</td><td>h264</td><td>Video codec</td></tr>
+  <tr><td>VIDEO_BITRATE</td><td>2000000</td><td>Target bitrate (bps)</td></tr>
+  <tr><td>EVIDENCE_CLIP_MARGIN_SEC</td><td>30</td><td>Clip window (&plusmn;seconds)</td></tr>
+</table>
+
+<!-- ======== PART D ======== -->
+
+<div style="background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 50%,#059669 100%);color:#fff;padding:50px;margin:48px -32px 40px;text-align:center" class="page-break">
+  <div style="font-size:12px;text-transform:uppercase;letter-spacing:3px;opacity:.6;margin-bottom:8px">Phase 2</div>
+  <h1 style="font-size:28px;font-weight:700;margin-bottom:8px">Robotic Picking Module</h1>
+  <div style="font-size:15px;opacity:.8">Automated VLM Profile Picking with Collaborative Robot Arm</div>
+</div>
+
+<h2 id="s9">9. Robot Hardware</h2>
+
+<h3>9.1 Parts Handled</h3>
+<div style="display:flex;gap:16px;flex-wrap:wrap;justify-content:center;margin:16px 0">
+  <div style="background:var(--dark);border-radius:8px;padding:14px 22px;text-align:center;color:#e2e8f0">
+    <div style="font-size:26px;font-weight:700;color:#60a5fa">3 &ndash; 3.3m</div><div style="font-size:12px;color:#94a3b8">Length</div>
+  </div>
+  <div style="background:var(--dark);border-radius:8px;padding:14px 22px;text-align:center;color:#e2e8f0">
+    <div style="font-size:26px;font-weight:700;color:#34d399">100mm</div><div style="font-size:12px;color:#94a3b8">Width</div>
+  </div>
+  <div style="background:var(--dark);border-radius:8px;padding:14px 22px;text-align:center;color:#e2e8f0">
+    <div style="font-size:26px;font-weight:700;color:#fbbf24">20mm</div><div style="font-size:12px;color:#94a3b8">Height</div>
+  </div>
+  <div style="background:var(--dark);border-radius:8px;padding:14px 22px;text-align:center;color:#e2e8f0">
+    <div style="font-size:26px;font-weight:700;color:#f87171">&le;5kg</div><div style="font-size:12px;color:#94a3b8">Weight</div>
+  </div>
+</div>
+<p style="text-align:center;color:var(--g6);font-size:13px">Material: Aluminum extrusion profiles &mdash; smooth, flat, rigid</p>
+
+<h3>9.2 Robot Arm</h3>
+<p>6-axis cobot grips at center of gravity, rotates 90&deg; in air (horizontal &rarr; vertical), places directly into rack. No tilting table needed.</p>
+<table>
+  <tr><th>Model</th><th>Reach</th><th>Payload</th><th>Price</th><th>Fit</th></tr>
+  <tr><td><strong>UR20</strong></td><td>1750mm</td><td>20kg</td><td>~$58K</td><td>Best balance</td></tr>
+  <tr style="background:#f0fdf4"><td><strong>FANUC CRX-25iA</strong></td><td>1889mm</td><td>25kg</td><td>~$55K</td><td style="color:var(--green);font-weight:600">Most reach + headroom</td></tr>
+  <tr><td>FANUC CRX-20iA/L</td><td>1418mm</td><td>20kg</td><td>~$50K</td><td>Good fit</td></tr>
+</table>
+
+<h3>9.3 Vacuum Gripper</h3>
+<ul>
+  <li>500mm bar with 3&ndash;4 foam/rubber suction cups</li>
+  <li>Venturi vacuum generator (no external compressor)</li>
+  <li>Pressure sensor confirms grip (&ge;80 kPa)</li>
+  <li>Quick-release tool changer for future grippers</li>
+</ul>
+
+<h3>9.4 Vertical Dolly Rack</h3>
+<ul>
+  <li>Wheeled with locking casters, 10&ndash;15 vertical slots</li>
+  <li>Rubber-padded dividers, slot width 25mm, height 3.5m</li>
+  <li>Optical slot occupancy sensors</li>
+  <li>Rack ID barcode for traceability</li>
+  <li>2 racks per station (one filling, one transporting)</li>
+</ul>
+
+<h3>9.5 Physical Layout</h3>
+<pre><code>    +---------------+
+    |  MODULA VLM   |     +---------+
+    |    Bay        |     |  DOLLY  |
+    |  +--------+   |     |  RACK   |
+    |  |  Tray  |&lt;--+--&gt;  |(vertical|
+    |  | Opening|   |  ^  | slots)  |
+    |  +--------+   |  |  +---------+
+    +---------------+  |
+                     +-+-+
+                     |ARM|  Robot base
+                     | * |  (floor-mounted)
+                     +---+
+
+    &lt;-- 1.5m --&gt;&lt;- 1.5m -&gt;
+    Swing clearance: 1.5m radius
+    Camera: above tray (existing)</code></pre>
+
+<h2 id="s10" class="page-break">10. Pick Sequence</h2>
+
+<h3>10.1 Three-Step Cycle</h3>
+<div class="process-grid" style="grid-template-columns:repeat(3,1fr)">
+  <div class="process-card" style="background:#1a56db">
+    <h4>Step 1 &mdash; Detect</h4>
+    <p style="opacity:.7;font-size:11px">~0.5 seconds</p>
+    <ul><li>Modula presents tray</li><li>Camera captures frame</li><li>YOLO detects SKU + bbox</li><li>Bbox &rarr; tray XY</li><li>Command sent to arm</li></ul>
+  </div>
+  <div class="process-card" style="background:#059669">
+    <h4>Step 2 &mdash; Pick + Rotate</h4>
+    <p style="opacity:.7;font-size:11px">~4.5 seconds</p>
+    <ul><li>Arm moves to tray slot</li><li>Z lowers, vacuum engages</li><li>Pressure confirms grip</li><li>Lifts clear of dividers</li><li>Wrist rotates 90&deg;</li></ul>
+  </div>
+  <div class="process-card" style="background:#7c3aed">
+    <h4>Step 3 &mdash; Place</h4>
+    <p style="opacity:.7;font-size:11px">~3 seconds</p>
+    <ul><li>Traverse to rack slot</li><li>Lower into slot</li><li>Vacuum releases</li><li>Sensor confirms</li><li>Arm returns home</li></ul>
+  </div>
+</div>
+
+<div class="callout callout-success">
+  <strong>~8 seconds per pick = ~450 picks/hour</strong>
+  Human operator averages 20&ndash;30s/pick (~120&ndash;180/hr). Robot delivers 2.5&ndash;3.75x throughput improvement.
+</div>
+
+<h3>10.2 Error Handling</h3>
+<table>
+  <tr><th>Error</th><th>Detection</th><th>Response</th></tr>
+  <tr><td>No grip</td><td>Pressure &lt; 60 kPa</td><td>Retry, alert after 3 failures</td></tr>
+  <tr><td>Wrong part</td><td>Before/after YOLO mismatch</td><td>Stop, alert operator</td></tr>
+  <tr><td>Part dropped</td><td>Pressure loss mid-cycle</td><td>E-stop, hold position</td></tr>
+  <tr><td>Rack slot occupied</td><td>Occupancy sensor</td><td>Skip to next slot</td></tr>
+  <tr><td>Rack full</td><td>All slots filled</td><td>Pause, alert to swap</td></tr>
+  <tr><td>Collision</td><td>Force/torque sensor</td><td>Auto-stop (cobot safety)</td></tr>
+  <tr><td>No tray</td><td>Camera sees no tray</td><td>Wait for WMS signal</td></tr>
+</table>
+
+<h2 id="s11" class="page-break">11. Software Integration</h2>
+
+<h3>11.1 New Modules</h3>
+<pre><code>local_agent/traceability/
+  ├── zone_types/
+  │   └── robot_pick.py          # Zone handler
+  └── robot/
+      ├── robot_controller.py    # Arm motion (Modbus/RTDE)
+      ├── vacuum_gripper.py      # Gripper + pressure
+      ├── rack_manager.py        # Slot occupancy
+      └── pick_planner.py        # Bbox → XY → trajectory</code></pre>
+
+<div class="callout callout-info">
+  <strong>Key Integration</strong>
+  <code>Detection.bbox</code> (pixels) &rarr; <code>tray_slot_xy</code> (mm) &rarr; <code>arm_joint_angles</code> (degrees). One-time camera-to-robot calibration via checkerboard homography.
+</div>
+
+<h3>11.2 Zone Configuration</h3>
+<pre><code>{
+  "zone_id": 1,
+  "name": "VLM Robotic Pick",
+  "type": "robot_pick",
+  "cameras": [0],
+  "models": ["metwall.onnx"],
+  "robot": {
+    "controller": "ur20",
+    "protocol": "modbus_tcp",
+    "ip": "192.168.1.100",
+    "port": 502,
+    "gripper": "vacuum",
+    "rack_slots": 15
+  }
+}</code></pre>
+
+<h3>11.3 Events</h3>
+<table>
+  <tr><th>Event</th><th>Trigger</th><th>Data</th></tr>
+  <tr><td><code>pick_commanded</code></td><td>WMS order + camera detect</td><td>sku, tray_slot, rack_id</td></tr>
+  <tr><td><code>pick_executing</code></td><td>Arm starts moving</td><td>arm_position, vacuum_status</td></tr>
+  <tr><td><code>pick_gripped</code></td><td>Vacuum confirms</td><td>pressure, grip_quality</td></tr>
+  <tr><td><code>pick_rotating</code></td><td>Arm rotating 90&deg;</td><td>rotation_angle</td></tr>
+  <tr><td><code>pick_placed</code></td><td>Profile in rack</td><td>slot_id, rack_id</td></tr>
+  <tr><td><code>pick_verified</code></td><td>Before/after match</td><td>sku_confirmed, confidence</td></tr>
+  <tr><td><code>pick_failed</code></td><td>Error in cycle</td><td>error_type, retry_count</td></tr>
+  <tr><td><code>rack_full</code></td><td>All slots filled</td><td>rack_id, count</td></tr>
+  <tr><td><code>rack_swapped</code></td><td>Rack replaced</td><td>old_id, new_id</td></tr>
+</table>
+
+<h3>11.4 Calibration</h3>
+<ol>
+  <li>Place checkerboard on VLM tray</li>
+  <li>Camera detects corners in pixels</li>
+  <li>Robot arm touches each corner &rarr; record XYZ</li>
+  <li>Compute homography matrix (pixel &rarr; mm)</li>
+  <li>Store in <code>calibration.json</code></li>
+  <li>Re-calibrate if camera or arm repositioned</li>
+</ol>
+
+<h3>11.5 Dashboard: Robot Status Panel</h3>
+<ul>
+  <li>Real-time arm position (joint angles)</li>
+  <li>Current pick order (SKU, qty remaining)</li>
+  <li>Vacuum pressure gauge</li>
+  <li>Rack slot occupancy grid</li>
+  <li>Pick rate graph (current vs. average)</li>
+  <li>Error log with video timestamps</li>
+  <li>Manual controls (pause, resume, home, e-stop)</li>
+</ul>
+
+<h2 id="s12" class="page-break">12. Safety &amp; Cost Estimate</h2>
+
+<h3>12.1 Safety</h3>
+<table>
+  <tr><th>Feature</th><th>Implementation</th></tr>
+  <tr><td>Cobot safety</td><td>Force/torque limiting, auto-stop on contact (ISO 10218-1)</td></tr>
+  <tr><td>No cage required</td><td>Human collaboration rated (ISO/TS 15066)</td></tr>
+  <tr><td>Swing clearance</td><td>1.5m radius, yellow floor tape + signs</td></tr>
+  <tr><td>E-stop</td><td>Teach pendant + wall-mounted panel</td></tr>
+  <tr><td>Vacuum fail-safe</td><td>Arm stops + holds if pressure drops</td></tr>
+  <tr><td>Light indicator</td><td>Green (run), yellow (pause), red (error)</td></tr>
+  <tr><td>Speed reduction</td><td>50% when proximity sensor detects human</td></tr>
+</table>
+
+<h3>12.2 Cost Estimate</h3>
+<table>
+  <tr><th>Component</th><th>Description</th><th style="text-align:right">Est. Cost (USD)</th></tr>
+  <tr><td>Robot arm</td><td>UR20 or FANUC CRX-25iA</td><td style="text-align:right">$50,000 &ndash; $58,000</td></tr>
+  <tr><td>Vacuum gripper</td><td>500mm bar + cups + venturi</td><td style="text-align:right">$2,000 &ndash; $3,500</td></tr>
+  <tr><td>Tool changer</td><td>Quick-release flange</td><td style="text-align:right">$1,500 &ndash; $2,500</td></tr>
+  <tr><td>Dolly racks (&times;2)</td><td>15-slot with sensors</td><td style="text-align:right">$3,000 &ndash; $5,000</td></tr>
+  <tr><td>Slot sensors</td><td>15x optical per rack</td><td style="text-align:right">$500 &ndash; $1,000</td></tr>
+  <tr><td>Mounting pedestal</td><td>Floor-mounted steel base</td><td style="text-align:right">$1,000 &ndash; $2,000</td></tr>
+  <tr><td>Pneumatic fittings</td><td>Air supply for vacuum</td><td style="text-align:right">$500 &ndash; $1,000</td></tr>
+  <tr><td>Safety accessories</td><td>E-stops, light stack, markings</td><td style="text-align:right">$1,000 &ndash; $1,500</td></tr>
+  <tr><td>Calibration</td><td>Checkerboard + software</td><td style="text-align:right">$500</td></tr>
+  <tr><td>Software integration</td><td>robot_controller, planner, rack</td><td style="text-align:right">$5,000 &ndash; $8,000</td></tr>
+  <tr><td>Installation</td><td>Mechanical + electrical + testing</td><td style="text-align:right">$3,000 &ndash; $5,000</td></tr>
+  <tr style="background:var(--g8);color:#fff"><td colspan="2" style="padding:12px 14px;font-weight:700">TOTAL PHASE 2</td><td style="padding:12px 14px;text-align:right;font-weight:700;font-size:16px">$68,000 &ndash; $87,000</td></tr>
+</table>
+
+<!-- FOOTER -->
+<div class="footer">
+  <p>VLM Vision &mdash; Pick Verification, Video Evidence &amp; Robotic Picking &mdash; Design Spec v1.0</p>
+  <p>Metwall Design Solutions Inc. &mdash; Prepared by Dhar Solutions</p>
+  <p>April 2026 &mdash; Confidential</p>
+</div>
+
+</div>
+</body>
+</html>
