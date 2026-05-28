@@ -5,3 +5,10 @@ __pycache__/
 *.pyd
 .env
 .build/
+data/test_video/
+data/test_requests/
+data/clips/
+data/video/
+data/traceability.log
+*.mp4
+*.avi
