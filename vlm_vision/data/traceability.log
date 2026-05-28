@@ -1,0 +1,9 @@
+2026-05-27 15:16:00,709 [INFO] local_agent.traceability.event_correlator: EventCorrelator initialized — zone 2, window 5.0s
+2026-05-27 15:16:00,710 [INFO] local_agent.traceability.evidence_generator: EvidenceGenerator initialized — requests dir: data/clip_requests
+2026-05-27 15:16:00,711 [INFO] local_agent.traceability.zone_manager: ZoneManager initialized with 5 zones
+2026-05-27 15:16:00,711 [INFO] local_agent.traceability.zone_manager:   Zone 1: packing — camera 2 — enabled
+2026-05-27 15:16:00,711 [INFO] local_agent.traceability.zone_manager:   Zone 2: barcode_scan — camera 3 — enabled
+2026-05-27 15:16:00,711 [INFO] local_agent.traceability.zone_manager:   Zone 3: sealing — camera 4 — enabled
+2026-05-27 15:16:00,711 [INFO] local_agent.traceability.zone_manager:   Zone 4: pallet_assembly — camera 5 — enabled
+2026-05-27 15:16:00,712 [INFO] local_agent.traceability.zone_manager:   Zone 5: truck_loading — camera 6 — enabled
+2026-05-27 15:16:00,712 [INFO] local_agent.traceability.pallet_tracker: PalletTracker initialized
