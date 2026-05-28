@@ -35,9 +35,21 @@ class CameraRecorder(threading.Thread):
         self._cap: Optional[cv2.VideoCapture] = None
 
     def run(self) -> None:
-        self._cap = cv2.VideoCapture(self.camera_id)
+        # Retry opening camera up to 5 times
+        for attempt in range(5):
+            self._cap = cv2.VideoCapture(self.camera_id, cv2.CAP_DSHOW)
+            if self._cap.isOpened():
+                break
+            print(f"Camera {self.camera_id} open attempt {attempt + 1} failed — retrying")
+            time.sleep(1.0)
+
+        if not self._cap.isOpened():
+            print(f"Camera {self.camera_id} failed to open after 5 attempts")
+            return
+
         self._cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.resolution[0])
         self._cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.resolution[1])
+        print(f"Camera {self.camera_id} opened successfully in thread")
 
         interval = 1.0 / self.fps
         while not self._stop_event.is_set():
@@ -45,6 +57,9 @@ class CameraRecorder(threading.Thread):
             ok, frame = self._cap.read()
             if ok and self._on_frame:
                 self._on_frame(self.camera_id, frame, time.time())
+            elif not ok:
+                print(f"Camera {self.camera_id} read failed")
+                break
             elapsed = time.monotonic() - start
             sleep_for = interval - elapsed
             if sleep_for > 0:
