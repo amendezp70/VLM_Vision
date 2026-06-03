@@ -1,0 +1,15 @@
+{
+  "request_id": "CLIP-1780520971-0001",
+  "zone_id": 4,
+  "camera_id": 5,
+  "event_timestamp": 1780516007.0,
+  "clip_start": 1780515977.0,
+  "clip_end": 1780516037.0,
+  "reason": "pallet_error",
+  "box_id": null,
+  "pallet_id": null,
+  "barcode_camera": null,
+  "barcode_scanner": null,
+  "notes": "no footage",
+  "created_at": 1780520971.2058678
+}
