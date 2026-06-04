@@ -154,9 +154,15 @@ class EventStore:
         cloud_url: str = "",
         uploaded: bool = False,
     ) -> str:
-        """Record a generated evidence clip. Returns the clip_id used."""
+        """Record a generated evidence clip. Returns the clip_id used.
+
+        If event_id is not given but event_timestamp is, the matching event is
+        looked up automatically so the clip links back to its event.
+        """
         if clip_id is None:
             clip_id = request_id or f"CLIP-{int(time.time() * 1000)}-{uuid.uuid4().hex[:4]}"
+        if event_id is None and event_timestamp is not None:
+            event_id = self.find_event_id_by_timestamp(event_timestamp)
         with self._connect() as conn:
             conn.execute(
                 """INSERT OR REPLACE INTO clips
@@ -221,7 +227,21 @@ class EventStore:
             if not row:
                 return None
             return self._attach_clips(conn, [dict(row)])[0]
+        
+    def find_event_id_by_timestamp(self, event_timestamp: float) -> Optional[str]:
+        """Return the event_id of the event recorded at this exact timestamp.
 
+        The clip request carries the event's timestamp, so this links a cut
+        clip back to the event that caused it.
+        """
+        with self._connect() as conn:
+            row = conn.execute(
+                "SELECT event_id FROM events WHERE event_timestamp = ? "
+                "ORDER BY created_at DESC LIMIT 1",
+                (event_timestamp,),
+            ).fetchone()
+            return row["event_id"] if row else None
+        
     def recent_events(self, limit: int = 50) -> List[Dict]:
         with self._connect() as conn:
             rows = conn.execute(

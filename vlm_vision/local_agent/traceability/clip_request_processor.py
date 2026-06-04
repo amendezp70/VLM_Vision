@@ -54,10 +54,12 @@ class ClipRequestProcessor:
         video_dir: str = "data/video",
         output_dir: str = "data/clips",
         segment_seconds: int = 300,
+        event_store=None,
     ):
         self.requests_dir = requests_dir
         self.video_dir = video_dir
         self.segment_seconds = segment_seconds
+        self.event_store = event_store
         self.processed_dir = os.path.join(requests_dir, "processed")
         self.failed_dir = os.path.join(requests_dir, "failed")
         os.makedirs(self.processed_dir, exist_ok=True)
@@ -119,6 +121,29 @@ class ClipRequestProcessor:
                                  offset_sec=offset, detail="ClipExtractor returned None")
 
         self._move(request_path, self.processed_dir)
+
+        # Record the clip in the store (linked to its event by event_timestamp).
+        # A store failure must not lose the clip we just cut, so it is caught.
+        if self.event_store is not None:
+            try:
+                self.event_store.record_clip(
+                    clip_id=request_id,
+                    request_id=request_id,
+                    event_timestamp=req.get("event_timestamp"),
+                    reason=req.get("reason"),
+                    zone_id=req.get("zone_id"),
+                    camera_id=req.get("camera_id"),
+                    box_id=req.get("box_id"),
+                    clip_start=req.get("clip_start"),
+                    clip_end=req.get("clip_end"),
+                    segment_file=segment_file,
+                    offset_sec=offset,
+                    file_path=clip.file_path,
+                    notes=req.get("notes", ""),
+                )
+            except Exception as e:
+                logger.error("EventStore.record_clip failed for %s: %s", request_id, e)
+
         return ProcessResult(request_id, "extracted", clip_path=clip.file_path,
                              segment_file=segment_file, offset_sec=offset, detail="ok")
 
