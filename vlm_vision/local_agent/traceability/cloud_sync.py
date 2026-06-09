@@ -52,6 +52,20 @@ class CloudSync:
         # False, sync_pending() reports clips as "blocked" instead of faking it.
         self.enable_file_upload = enable_file_upload
 
+    @classmethod
+    def from_config(cls, cfg, event_store, enable_file_upload: bool = False) -> "CloudSync":
+        """Build a CloudSync from a TraceabilityConfig.
+
+        enable_file_upload stays False by default: the file-upload step needs
+        a File Store scope we don't have yet, so the agent leaves it off until
+        that's wired in (then flips it to True).
+        """
+        return cls(
+            event_store=event_store,
+            function_base_url=cfg.catalyst_function_base_url,
+            enable_file_upload=enable_file_upload,
+        )
+
     # ---- health -----------------------------------------------------------
 
     def health_check(self) -> bool:

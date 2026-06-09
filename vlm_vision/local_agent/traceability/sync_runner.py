@@ -33,6 +33,11 @@ class SyncRunner:
         self._last_result: Optional[Dict[str, int]] = None
         self._cycles = 0
 
+    @classmethod
+    def from_config(cls, cfg, cloud_sync) -> "SyncRunner":
+        """Build a SyncRunner from a TraceabilityConfig (uses its interval)."""
+        return cls(cloud_sync, interval_sec=cfg.cloud_sync_interval_sec)
+
     def run_once(self) -> Dict[str, int]:
         """Run a single sync pass. Never raises -- failures are logged and
         returned as a result so the caller (and the loop) keep going."""
