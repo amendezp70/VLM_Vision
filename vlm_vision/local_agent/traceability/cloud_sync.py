@@ -3,24 +3,21 @@
 CloudSync -- pushes locally-recorded evidence to the Zoho Catalyst cloud.
 
 The local EventStore is the source of truth and the offline buffer. This
-client periodically takes whatever has NOT been uploaded yet and sends it to
-the Catalyst function (the Node/Express service in functions/vlm_vision_function),
-which writes the rows into the Datastore tables.
+client periodically takes whatever has NOT been uploaded yet and sends it up:
 
 Flow for each pending clip:
-    1. upload the .mp4 file to the File Store  ->  returns a cloud_url
-       *** THIS STEP IS A STUB -- see _upload_file_to_filestore() ***
-    2. POST /video/clips with the metadata + cloud_url   (records the DB row)
+    1. upload the .mp4 to the Catalyst File Store  ->  returns a file reference
+    2. POST /video/clips (the function) with metadata + that reference
     3. mark the clip uploaded locally so it is never sent twice
 
-Only step 1 is blocked (needs a File Store credential / endpoint from Dhar).
-Steps 2 and 3 are complete and match the function's real request shapes:
+Step 1 uploads directly to the File Store using a token from CatalystAuth
+(which auto-refreshes). The upload response gives a numeric file id; we store a
+canonical file reference URL as the clip's cloud_url.
+
+Request shapes match functions/vlm_vision_function/routes/video.js:
   - POST /video/clips    requires clip_id, event_id, cloud_url
   - POST /video/segments requires segment_id, cloud_url
-(see functions/vlm_vision_function/routes/video.js)
-
-The cloud column names differ slightly from our local ones; the mapping
-below follows the schema documented in services/video_datastore.js.
+Cloud column names follow services/video_datastore.js.
 """
 import logging
 import os
@@ -28,11 +25,15 @@ from typing import Dict, List, Optional
 
 import requests
 
+from local_agent.traceability.catalyst_auth import CatalystAuth, CatalystAuthError
+
 logger = logging.getLogger(__name__)
+
+_FILESTORE_BASE = "https://api.catalyst.zoho.com/baas/v1"
 
 
 class FileUploadNotConfigured(Exception):
-    """Raised by the file-upload stub until the real upload is wired in."""
+    """Raised when the File Store upload can't run (missing auth/ids)."""
 
 
 class CloudSync:
@@ -40,36 +41,48 @@ class CloudSync:
         self,
         event_store,
         function_base_url: str,
-        request_timeout: float = 15.0,
+        request_timeout: float = 30.0,
         enable_file_upload: bool = False,
+        auth: Optional[CatalystAuth] = None,
+        project_id: str = "",
+        folder_evidence_clips: str = "",
+        folder_video_segments: str = "",
+        filestore_base: str = _FILESTORE_BASE,
     ):
-        # function_base_url example:
-        #   https://<project>.development.catalystserverless.com/server/vlm_vision_function
         self.store = event_store
         self.base_url = function_base_url.rstrip("/")
         self.timeout = request_timeout
-        # Stays False until Dhar gives us the File Store upload method. While
-        # False, sync_pending() reports clips as "blocked" instead of faking it.
         self.enable_file_upload = enable_file_upload
+        self.auth = auth
+        self.project_id = project_id
+        self.folder_evidence_clips = folder_evidence_clips
+        self.folder_video_segments = folder_video_segments
+        self.filestore_base = filestore_base.rstrip("/")
 
     @classmethod
     def from_config(cls, cfg, event_store, enable_file_upload: bool = False) -> "CloudSync":
-        """Build a CloudSync from a TraceabilityConfig.
-
-        enable_file_upload stays False by default: the file-upload step needs
-        a File Store scope we don't have yet, so the agent leaves it off until
-        that's wired in (then flips it to True).
-        """
+        """Build a CloudSync from a TraceabilityConfig. Builds a CatalystAuth
+        from the .env credentials when they are present."""
+        auth = None
+        try:
+            candidate = CatalystAuth.from_config(cfg)
+            if candidate.has_credentials():
+                auth = candidate
+        except Exception as e:
+            logger.error("Could not build CatalystAuth: %s", e)
         return cls(
             event_store=event_store,
             function_base_url=cfg.catalyst_function_base_url,
             enable_file_upload=enable_file_upload,
+            auth=auth,
+            project_id=cfg.catalyst_project_id,
+            folder_evidence_clips=cfg.catalyst_folder_evidence_clips,
+            folder_video_segments=cfg.catalyst_folder_video_segments,
         )
 
     # ---- health -----------------------------------------------------------
 
     def health_check(self) -> bool:
-        """Return True if the function's /health endpoint answers ok."""
         try:
             r = requests.get(f"{self.base_url}/health", timeout=self.timeout)
             return r.ok and r.json().get("status") == "ok"
@@ -77,33 +90,50 @@ class CloudSync:
             logger.error("Health check failed: %s", e)
             return False
 
-    # ---- the blocked step -------------------------------------------------
+    # ---- File Store upload (real) -----------------------------------------
 
-    def _upload_file_to_filestore(self, local_path: str, folder: str) -> str:
-        """Upload a local file to the Catalyst File Store and return its URL.
+    def _upload_file_to_filestore(self, local_path: str, folder: str = "evidence_clips") -> str:
+        """Upload a local file to the Catalyst File Store and return a canonical
+        file reference URL (stored as the clip's cloud_url).
 
-        *** STUB -- NOT YET IMPLEMENTED ***
-        We are waiting on one of two things from Dhar (see the message we sent):
-          (a) a File Store upload credential/scope so we can upload from here, OR
-          (b) a new upload endpoint on his function so we never hold a credential.
-        Until then this raises, and sync_pending() treats the clip as blocked
-        (left pending, to retry once this is wired in). Nothing is faked.
+        Resolves the folder name to its configured folder id, gets a valid
+        token from CatalystAuth, POSTs the file, and parses the returned id.
         """
-        raise FileUploadNotConfigured(
-            "File Store upload not configured yet -- waiting on Dhar "
-            "(credential or an upload endpoint). local_path=%s folder=%s"
-            % (local_path, folder)
-        )
+        if self.auth is None or not self.project_id:
+            raise FileUploadNotConfigured("Catalyst auth/project_id not configured")
+        folder_id = (self.folder_evidence_clips if folder == "evidence_clips"
+                     else self.folder_video_segments)
+        if not folder_id:
+            raise FileUploadNotConfigured(f"No folder id configured for '{folder}'")
+        if not (local_path and os.path.isfile(local_path)):
+            raise FileUploadNotConfigured(f"Local file not found: {local_path}")
+
+        token = self.auth.get_token()
+        url = f"{self.filestore_base}/project/{self.project_id}/folder/{folder_id}/file"
+        fname = os.path.basename(local_path)
+        with open(local_path, "rb") as fh:
+            r = requests.post(
+                url,
+                headers={"Authorization": f"Zoho-oauthtoken {token}"},
+                files={"code": (fname, fh)},
+                data={"file_name": fname},
+                timeout=self.timeout,
+            )
+        try:
+            payload = r.json()
+        except Exception:
+            raise FileUploadNotConfigured(f"Upload returned non-JSON (HTTP {r.status_code})")
+        if payload.get("status") != "success":
+            raise FileUploadNotConfigured(f"Upload failed: {payload}")
+        file_id = payload.get("data", {}).get("id")
+        if not file_id:
+            raise FileUploadNotConfigured(f"No file id in upload response: {payload}")
+        # Canonical reference to the stored file (dashboard builds the download).
+        return f"{self.filestore_base}/project/{self.project_id}/folder/{folder_id}/file/{file_id}"
 
     # ---- mapping local rows -> cloud request bodies -----------------------
 
     def _clip_to_cloud_body(self, clip: Dict, cloud_url: str) -> Dict:
-        """Map a local clips-row to the body POST /video/clips expects.
-
-        Cloud column names come from services/video_datastore.js:
-          clip_id, event_id, segment_id, clip_start_sec, clip_end_sec,
-          cloud_url, generated_at, retained_indefinitely
-        """
         return {
             "clip_id": clip.get("clip_id"),
             "event_id": clip.get("event_id"),
@@ -128,26 +158,9 @@ class CloudSync:
             logger.error("POST /video/clips failed: %s", e)
             return False
 
-    def _post_segment(self, body: Dict) -> bool:
-        try:
-            r = requests.post(f"{self.base_url}/video/segments", json=body, timeout=self.timeout)
-            if r.ok:
-                return True
-            logger.error("POST /video/segments rejected (%s): %s", r.status_code, r.text)
-            return False
-        except Exception as e:
-            logger.error("POST /video/segments failed: %s", e)
-            return False
-
     # ---- the main loop ----------------------------------------------------
 
     def sync_pending(self) -> Dict[str, int]:
-        """Try to push every not-yet-uploaded clip to the cloud.
-
-        Returns counts: {"uploaded": n, "blocked": n, "failed": n}.
-        A clip is only marked uploaded locally after the cloud row is written,
-        so an interruption just leaves it pending for next time (safe to rerun).
-        """
         uploaded = blocked = failed = 0
         pending = self.store.pending_uploads()
         logger.info("CloudSync: %d clip(s) pending", len(pending))
@@ -156,13 +169,13 @@ class CloudSync:
             clip_id = clip.get("clip_id")
             local_path = clip.get("file_path")
 
-            # Step 1: get the file into the File Store (blocked for now).
             if not self.enable_file_upload:
                 blocked += 1
                 continue
             try:
                 cloud_url = self._upload_file_to_filestore(local_path, "evidence_clips")
-            except FileUploadNotConfigured:
+            except (FileUploadNotConfigured, CatalystAuthError) as e:
+                logger.warning("Upload not done for %s: %s", clip_id, e)
                 blocked += 1
                 continue
             except Exception as e:
@@ -170,7 +183,6 @@ class CloudSync:
                 failed += 1
                 continue
 
-            # Step 2: record the row in the cloud via the function.
             body = self._clip_to_cloud_body(clip, cloud_url)
             if not (body["clip_id"] and body["event_id"] and body["cloud_url"]):
                 logger.error("Clip %s missing required fields for cloud insert", clip_id)
@@ -180,7 +192,6 @@ class CloudSync:
                 failed += 1
                 continue
 
-            # Step 3: mark uploaded locally so we never send it twice.
             try:
                 self.store.mark_uploaded(clip_id, cloud_url)
                 uploaded += 1
