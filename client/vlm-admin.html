@@ -150,6 +150,115 @@
       );
     }
 
+    // ── Video Archive ─────────────────────────────────────────────────
+    const ZONE_NAMES = { 1: "Packing", 2: "Barcode Scan", 3: "Sealing", 4: "Pallet", 5: "Truck" };
+    const archiveCloudRef = (id) =>
+      "https://api.catalyst.zoho.com/baas/v1/project/35344000000152001/folder/35344000000205535/file/" + id;
+
+    const SAMPLE_ARCHIVE = [
+      { event_id: "EVT-10", event_timestamp: 1781035400, zone_id: 2, box_id: "BOX-4431",
+        barcode_camera: "0687456771201", barcode_scanner: "0687456771201", match_status: "match", clips: [] },
+      { event_id: "EVT-09", event_timestamp: 1781035100, zone_id: 4, box_id: "BOX-4430",
+        barcode_camera: "0687456771188", barcode_scanner: "0687456000000", match_status: "mismatch",
+        clips: [{ cloud_url: archiveCloudRef("35344000000223101") }] },
+      { event_id: "EVT-08", event_timestamp: 1781034700, zone_id: 3, box_id: "BOX-4429",
+        barcode_camera: "0687456770042", barcode_scanner: "", match_status: "partial",
+        clips: [{ cloud_url: archiveCloudRef("35344000000223097") }] },
+      { event_id: "EVT-07", event_timestamp: 1781034200, zone_id: 2, box_id: "BOX-4428",
+        barcode_camera: "0687456223537", barcode_scanner: "0687456223537", match_status: "match", clips: [] },
+      { event_id: "EVT-06", event_timestamp: 1781033800, zone_id: 5, box_id: "BOX-4427",
+        barcode_camera: "0687456769910", barcode_scanner: "0687456769911", match_status: "mismatch",
+        clips: [{ cloud_url: archiveCloudRef("35344000000223080") }] },
+      { event_id: "EVT-05", event_timestamp: 1781033140, zone_id: 4, box_id: "BOX-4420",
+        barcode_camera: "1902birch44021", barcode_scanner: "1902birch44021", match_status: "match", clips: [] },
+      { event_id: "EVT-04", event_timestamp: 1781032600, zone_id: 3, box_id: "BOX-4419",
+        barcode_camera: "0687456768833", barcode_scanner: "0687456768833", match_status: "match", clips: [] },
+      { event_id: "EVT-03", event_timestamp: 1781031820, zone_id: 2, box_id: "BOX-4417",
+        barcode_camera: "0687456223537", barcode_scanner: "0687456999999", match_status: "mismatch",
+        clips: [{ cloud_url: archiveCloudRef("35344000000223003") }] },
+    ];
+
+    function VideoArchive() {
+      const [resultFilter, setResultFilter] = useState("");
+      const [zoneFilter, setZoneFilter] = useState("");
+
+      const rows = SAMPLE_ARCHIVE
+        .filter(e => !resultFilter || e.match_status === resultFilter)
+        .filter(e => !zoneFilter || String(e.zone_id) === zoneFilter)
+        .sort((a, b) => b.event_timestamp - a.event_timestamp);
+      // LIVE: replace SAMPLE_ARCHIVE with state loaded from
+      //   fetchJSON("/traceability/recent?limit=100") in a useEffect.
+
+      const selectCls = "bg-gray-800 border border-gray-700 rounded px-2 py-1 text-sm";
+
+      return (
+        <div>
+          <div className="flex flex-wrap items-center gap-3 mb-5">
+            <h2 className="text-lg font-semibold">Video Archive</h2>
+            <span className="text-sm text-gray-500">Recent events across all zones</span>
+            <div className="flex-1"></div>
+            <select value={resultFilter} onChange={e => setResultFilter(e.target.value)} className={selectCls}>
+              <option value="">All results</option>
+              <option value="mismatch">Mismatches</option>
+              <option value="match">Matches</option>
+              <option value="partial">Partial</option>
+            </select>
+            <select value={zoneFilter} onChange={e => setZoneFilter(e.target.value)} className={selectCls}>
+              <option value="">All zones</option>
+              <option value="1">Zone 1 — Packing</option>
+              <option value="2">Zone 2 — Barcode Scan</option>
+              <option value="3">Zone 3 — Sealing</option>
+              <option value="4">Zone 4 — Pallet</option>
+              <option value="5">Zone 5 — Truck</option>
+            </select>
+          </div>
+
+          <div className="text-xs text-gray-600 mb-2">{rows.length} event{rows.length === 1 ? "" : "s"}</div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-800 text-gray-400 text-left">
+                  <th className="py-2 px-3">Time</th>
+                  <th className="py-2 px-3">Zone</th>
+                  <th className="py-2 px-3">Box</th>
+                  <th className="py-2 px-3">Camera read</th>
+                  <th className="py-2 px-3">Scanner read</th>
+                  <th className="py-2 px-3">Result</th>
+                  <th className="py-2 px-3">Evidence</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((e) => (
+                  <tr key={e.event_id} className="border-b border-gray-900 hover:bg-gray-900/50">
+                    <td className="py-2 px-3 text-gray-400 whitespace-nowrap">{new Date(e.event_timestamp * 1000).toLocaleString()}</td>
+                    <td className="py-2 px-3 whitespace-nowrap">
+                      <span className="text-gray-300">{e.zone_id}</span>
+                      <span className="text-gray-600"> · {ZONE_NAMES[e.zone_id] || "?"}</span>
+                    </td>
+                    <td className="py-2 px-3 font-mono">{e.box_id || "—"}</td>
+                    <td className="py-2 px-3 font-mono">{e.barcode_camera || "—"}</td>
+                    <td className="py-2 px-3 font-mono">{e.barcode_scanner || "—"}</td>
+                    <td className="py-2 px-3"><StatusBadge status={e.match_status} /></td>
+                    <td className="py-2 px-3">
+                      {e.clips && e.clips.length > 0 ? (
+                        <a href={e.clips[0].cloud_url || "#"} target="_blank" rel="noreferrer" className="text-blue-400 hover:text-blue-300">View clip ▸</a>
+                      ) : (
+                        <span className="text-gray-600">No clip</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {rows.length === 0 && (
+              <p className="text-gray-600 text-center py-10">No events match these filters.</p>
+            )}
+          </div>
+        </div>
+      );
+    }
+
     function PickHistory() {
       const [events, setEvents] = useState([]);
       const [filter, setFilter] = useState("");
@@ -286,6 +395,7 @@
         { id: "stats", label: "Statistics" },
         { id: "model", label: "Model" },
         { id: "trace", label: "Traceability" },
+        { id: "archive", label: "Video Archive" },
       ];
 
       return (
@@ -327,6 +437,7 @@
             )}
             {tab === "model" && <ModelInfo />}
             {tab === "trace" && <TraceabilitySearch />}
+            {tab === "archive" && <VideoArchive />}
           </div>
         </div>
       );
