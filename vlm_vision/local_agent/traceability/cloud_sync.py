@@ -111,11 +111,16 @@ class CloudSync:
         token = self.auth.get_token()
         url = f"{self.filestore_base}/project/{self.project_id}/folder/{folder_id}/file"
         fname = os.path.basename(local_path)
+        # Zoho's File Store rejects a file part with no content-type ("Invalid
+        # content type"). curl sets one automatically; requests does not unless
+        # we pass it explicitly, so guess it from the extension like curl does.
+        import mimetypes
+        ctype = mimetypes.guess_type(fname)[0] or "application/octet-stream"
         with open(local_path, "rb") as fh:
             r = requests.post(
                 url,
                 headers={"Authorization": f"Zoho-oauthtoken {token}"},
-                files={"code": (fname, fh)},
+                files={"code": (fname, fh, ctype)},
                 data={"file_name": fname},
                 timeout=self.timeout,
             )
