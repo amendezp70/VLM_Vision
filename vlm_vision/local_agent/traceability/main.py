@@ -6,6 +6,7 @@ Entry point for the traceability module. Wires together all components:
 - EventCorrelator (dual barcode verification)
 - PalletTracker (pallet assembly tracking)
 - EvidenceGenerator (clip requests on bad events)
+- TraceabilityRuntime (local memory + cloud sync layer)
 
 Runs as a separate process alongside the VLM Bay Agent (Process 1)
 and Video Recorder (Process 3). Does NOT modify any existing code.
@@ -21,11 +22,19 @@ from typing import Optional
 import cv2
 import numpy as np
 
+# Make stdout UTF-8 so special characters (arrows, em-dashes) don't crash
+# logging on Windows (default console is cp1252).
+try:
+    sys.stdout.reconfigure(encoding="utf-8")
+except Exception:
+    pass
+
 from local_agent.traceability.zone_manager import ZoneManager, ZoneFrame
 from local_agent.traceability.barcode_reader import BarcodeReader, BarcodeResult
 from local_agent.traceability.event_correlator import EventCorrelator
 from local_agent.traceability.pallet_tracker import PalletTracker
 from local_agent.traceability.evidence_generator import EvidenceGenerator
+from local_agent.traceability.traceability_runtime import TraceabilityRuntime
 
 # Set up logging
 logging.basicConfig(
@@ -33,7 +42,7 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     handlers=[
         logging.StreamHandler(sys.stdout),
-        logging.FileHandler("data/traceability.log", mode="a"),
+        logging.FileHandler("data/traceability.log", mode="a", encoding="utf-8"),
     ],
 )
 logger = logging.getLogger(__name__)
@@ -54,13 +63,13 @@ def run_zone_camera(
     and puts them into the shared frame queue.
     Reconnects automatically if camera disconnects.
     """
-    logger.info(f"Zone {zone_id} camera thread started — camera_id={camera_id}")
+    logger.info(f"Zone {zone_id} camera thread started - camera_id={camera_id}")
     frame_interval = 1.0 / fps
 
     while running.is_set():
         cap = cv2.VideoCapture(camera_id)
         if not cap.isOpened():
-            logger.warning(f"Zone {zone_id} camera {camera_id} not available — retrying in {CAMERA_RECONNECT_DELAY}s")
+            logger.warning(f"Zone {zone_id} camera {camera_id} not available - retrying in {CAMERA_RECONNECT_DELAY}s")
             time.sleep(CAMERA_RECONNECT_DELAY)
             continue
 
@@ -69,10 +78,10 @@ def run_zone_camera(
         while running.is_set():
             ret, frame = cap.read()
             if not ret:
-                logger.warning(f"Zone {zone_id} camera {camera_id} lost — reconnecting")
+                logger.warning(f"Zone {zone_id} camera {camera_id} lost - reconnecting")
                 break
 
-            # Don't block if queue is full — drop frame and continue
+            # Don't block if queue is full - drop frame and continue
             if not frame_queue.full():
                 frame_queue.put((zone_id, frame, time.time()))
 
@@ -92,7 +101,7 @@ def run_frame_processor(
     running: threading.Event,
 ):
     """
-    Main processing loop — reads frames from the queue and
+    Main processing loop - reads frames from the queue and
     routes them to the correct handler based on zone type.
     """
     logger.info("Frame processor started")
@@ -137,7 +146,7 @@ def _handle_barcode_zone(
     barcode_reader: BarcodeReader,
     event_correlator: EventCorrelator,
 ):
-    """Zone 2 — read barcode from camera frame and send to correlator."""
+    """Zone 2 - read barcode from camera frame and send to correlator."""
     camera_reads = barcode_reader.read_from_frame(zone_frame.frame, zone_frame.timestamp)
     for read in camera_reads:
         logger.info(f"Zone 2 camera barcode: {read.value}")
@@ -145,23 +154,23 @@ def _handle_barcode_zone(
 
 
 def _handle_packing_zone(zone_frame: ZoneFrame):
-    """Zone 1 — SKU detection handled by existing metwall.onnx detector."""
+    """Zone 1 - SKU detection handled by existing metwall.onnx detector."""
     if zone_frame.detections:
         top = max(zone_frame.detections, key=lambda d: d.confidence)
         logger.debug(f"Zone 1 detected: {top.label} ({top.confidence:.2f})")
 
 
 def _handle_sealing_zone(zone_frame: ZoneFrame):
-    """Zone 3 — check if box is sealed."""
+    """Zone 3 - check if box is sealed."""
     for det in zone_frame.detections:
         if det.label in ("box_sealed", "box_taped"):
-            logger.info(f"Zone 3 box sealed confirmed — confidence {det.confidence:.2f}")
+            logger.info(f"Zone 3 box sealed confirmed - confidence {det.confidence:.2f}")
         elif det.label == "box_open":
-            logger.warning(f"Zone 3 box NOT sealed — confidence {det.confidence:.2f}")
+            logger.warning(f"Zone 3 box NOT sealed - confidence {det.confidence:.2f}")
 
 
 def _handle_pallet_zone(zone_frame: ZoneFrame, pallet_tracker: PalletTracker):
-    """Zone 4 — track box placement on pallet."""
+    """Zone 4 - track box placement on pallet."""
     active = pallet_tracker.get_active_pallet()
     if active is None:
         active = pallet_tracker.start_pallet()
@@ -172,7 +181,7 @@ def _handle_pallet_zone(zone_frame: ZoneFrame, pallet_tracker: PalletTracker):
 
 
 def _handle_truck_zone(zone_frame: ZoneFrame, pallet_tracker: PalletTracker):
-    """Zone 5 — confirm pallet loaded onto truck."""
+    """Zone 5 - confirm pallet loaded onto truck."""
     for det in zone_frame.detections:
         if det.label in ("truck_bay", "pallet_full"):
             active = pallet_tracker.get_active_pallet()
@@ -188,29 +197,33 @@ def main():
     Initializes all components and starts all threads.
     """
     logger.info("=" * 60)
-    logger.info("VLM Vision — Traceability Agent starting")
+    logger.info("VLM Vision - Traceability Agent starting")
     logger.info("=" * 60)
 
     # Ensure data directory exists
     os.makedirs("data", exist_ok=True)
     os.makedirs("data/clip_requests", exist_ok=True)
 
+    # Build the memory + cloud layer (store, recording correlator, clip
+    # processor, cloud sync). Degrades gracefully if cloud isn't configured.
+    runtime = TraceabilityRuntime.build()
+
     # Initialize all components
     zone_manager = ZoneManager.from_env()
     barcode_reader = BarcodeReader()
-    event_correlator = EventCorrelator.from_env()
+    event_correlator = runtime.correlator   # records every event to the store
     pallet_tracker = PalletTracker()
     evidence_generator = EvidenceGenerator.from_env()
 
     # Wire up alert pipeline:
-    # mismatch → evidence_generator → writes JSON → Video Recorder cuts clip
+    # mismatch -> evidence_generator -> writes JSON -> Video Recorder cuts clip
     event_correlator.on_alert(evidence_generator.on_correlation_event)
-    logger.info("Alert pipeline wired: EventCorrelator → EvidenceGenerator")
+    logger.info("Alert pipeline wired: EventCorrelator -> EvidenceGenerator")
 
     # Shared frame queue between camera threads and processor
     frame_queue: Queue = Queue(maxsize=FRAME_QUEUE_SIZE)
 
-    # Running flag — set to False to stop all threads cleanly
+    # Running flag - set to False to stop all threads cleanly
     running = threading.Event()
     running.set()
 
@@ -241,8 +254,9 @@ def main():
 
     # Start USB scanner listener
     barcode_reader.start_scanner_listener()
+    runtime.start()   # starts clip-processor loop + cloud sync (if configured)
 
-    logger.info(f"Traceability Agent running — {len(zone_manager.get_enabled_zones())} zones active")
+    logger.info(f"Traceability Agent running - {len(zone_manager.get_enabled_zones())} zones active")
     logger.info("Press Ctrl+C to stop")
 
     try:
@@ -251,10 +265,12 @@ def main():
             # Log a heartbeat every 10 seconds
             summary = pallet_tracker.summary()
             mismatches = len(event_correlator.get_mismatches())
+            store_stats = runtime.stats()
             logger.info(
-                f"Heartbeat — pallets: {summary['active_pallets']} active / "
-                f"{summary['completed_pallets']} completed — "
-                f"mismatches: {mismatches}"
+                f"Heartbeat - pallets: {summary['active_pallets']} active / "
+                f"{summary['completed_pallets']} completed - "
+                f"mismatches: {mismatches} - "
+                f"stored events: {store_stats.get('events', 0)}, clips: {store_stats.get('clips', 0)}"
             )
 
     except KeyboardInterrupt:
@@ -262,6 +278,7 @@ def main():
     finally:
         running.clear()
         barcode_reader.stop_scanner_listener()
+        runtime.stop()
         logger.info("Traceability Agent stopped cleanly")
 
 
