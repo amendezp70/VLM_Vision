@@ -8,7 +8,8 @@ ZoneManager expects from a "detector":
         {"label": str, "confidence": float, "bbox": [x1, y1, x2, y2]}
 
 ZoneManager.process_frame(..., detector=runner) then turns those dicts into
-Detection objects. So a runner instance is callable and drops straight in.
+Detection objects. ZoneManager calls detector.detect(frame), so this runner
+exposes BOTH a callable form (runner(frame)) and a .detect(frame) method.
 
 Design notes / why it's built this way:
   * CPU only via ONNX Runtime -- matches the factory-PC plan (no GPU).
@@ -98,6 +99,12 @@ class ONNXModelRunner:
         except Exception as e:
             logger.error("Inference failed on %s: %s", self.model_path, e)
             return []
+
+    def detect(self, frame: np.ndarray) -> List[dict]:
+        """Alias for __call__, so this runner satisfies ZoneManager, which
+        calls detector.detect(frame). Lets the runner be used either as a
+        plain callable or via .detect()."""
+        return self.__call__(frame)
 
     # ---- pre / post processing -------------------------------------------
 
