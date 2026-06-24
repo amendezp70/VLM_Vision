@@ -16,10 +16,10 @@ logger = logging.getLogger(__name__)
 
 class MatchStatus(Enum):
     """Result of comparing camera vs scanner barcode reads."""
-    MATCH = "match"         # Both sources read the same value ✅
-    MISMATCH = "mismatch"   # Both sources read but values differ ❌
-    PARTIAL = "partial"     # Only one source read successfully ⚠️
+    MATCH = "match"         # Both sources read the same value
+    MISMATCH = "mismatch"   # Both sources read but values differ
     PENDING = "pending"     # Waiting for second source to read
+    PARTIAL = "partial"     # Only one source read (the other expired)
 
 
 @dataclass
@@ -68,9 +68,9 @@ class EventCorrelator:
     Matches camera barcode reads with USB scanner reads within a time window.
 
     How it works:
-    - Camera reads a barcode → stored as pending camera read
-    - Scanner reads a barcode → stored as pending scanner read
-    - When both are present within the match window → compare values
+    - Camera reads a barcode -> stored as pending camera read
+    - Scanner reads a barcode -> stored as pending scanner read
+    - When both are present within the match window -> compare values
     - MATCH: barcode_verified = True, log success event
     - MISMATCH: barcode_verified = False, fire alert, generate evidence clip
     - PARTIAL: only one source read, log warning
@@ -85,7 +85,7 @@ class EventCorrelator:
         self._pending_scanner: Optional[PendingRead] = None
         self._events: List[CorrelationEvent] = []
         self._alert_callbacks: List = []
-        logger.info(f"EventCorrelator initialized — zone {zone_id}, window {match_window_sec}s")
+        logger.info(f"EventCorrelator initialized - zone {zone_id}, window {match_window_sec}s")
 
     def on_alert(self, callback):
         """Register a callback that fires on MISMATCH events."""
@@ -114,7 +114,7 @@ class EventCorrelator:
         """
         # Clean up expired pending reads
         if self._pending_scanner and self._is_expired(self._pending_scanner):
-            logger.warning("Scanner read expired before camera read arrived — PARTIAL")
+            logger.warning("Scanner read expired before camera read arrived - PARTIAL")
             event = self._make_partial_event(
                 scanner_result=self._pending_scanner.result,
                 box_id=box_id
@@ -127,7 +127,7 @@ class EventCorrelator:
             result=result,
             expires_at=self._make_expires_at()
         )
-        logger.debug(f"Camera read stored: {result.value} — waiting for scanner")
+        logger.debug(f"Camera read stored: {result.value} - waiting for scanner")
 
         # If scanner read is already waiting, correlate now
         if self._pending_scanner:
@@ -142,7 +142,7 @@ class EventCorrelator:
         """
         # Clean up expired pending reads
         if self._pending_camera and self._is_expired(self._pending_camera):
-            logger.warning("Camera read expired before scanner read arrived — PARTIAL")
+            logger.warning("Camera read expired before scanner read arrived - PARTIAL")
             event = self._make_partial_event(
                 camera_result=self._pending_camera.result,
                 box_id=box_id
@@ -155,7 +155,7 @@ class EventCorrelator:
             result=result,
             expires_at=self._make_expires_at()
         )
-        logger.debug(f"Scanner read stored: {result.value} — waiting for camera")
+        logger.debug(f"Scanner read stored: {result.value} - waiting for camera")
 
         # If camera read is already waiting, correlate now
         if self._pending_camera:
@@ -179,10 +179,10 @@ class EventCorrelator:
 
         if camera.value == scanner.value:
             status = MatchStatus.MATCH
-            logger.info(f"✅ MATCH: {camera.value} — delta {time_delta:.2f}s")
+            logger.info(f"MATCH: {camera.value} - delta {time_delta:.2f}s")
         else:
             status = MatchStatus.MISMATCH
-            logger.warning(f"❌ MISMATCH: camera={camera.value} scanner={scanner.value}")
+            logger.warning(f"MISMATCH: camera={camera.value} scanner={scanner.value}")
 
         event = CorrelationEvent(
             box_id=box_id,
@@ -199,7 +199,7 @@ class EventCorrelator:
         self._save_event(event)
 
         if event.needs_alert:
-            logger.warning(f"🚨 Alert triggered for mismatch — generating evidence clip")
+            logger.warning("Alert triggered for mismatch - generating evidence clip")
             self._fire_alerts(event)
 
         return event
@@ -230,7 +230,7 @@ class EventCorrelator:
         return self._events.copy()
 
     def get_mismatches(self) -> List[CorrelationEvent]:
-        """Return only mismatch events — for dashboard alerts."""
+        """Return only mismatch events - for dashboard alerts."""
         return [e for e in self._events if e.match_status == MatchStatus.MISMATCH]
 
     def clear(self):
