@@ -7,3 +7,212 @@
 2026-05-27 15:16:00,711 [INFO] local_agent.traceability.zone_manager:   Zone 4: pallet_assembly — camera 5 — enabled
 2026-05-27 15:16:00,712 [INFO] local_agent.traceability.zone_manager:   Zone 5: truck_loading — camera 6 — enabled
 2026-05-27 15:16:00,712 [INFO] local_agent.traceability.pallet_tracker: PalletTracker initialized
+2026-06-12 13:59:24,292 [INFO] __main__: ============================================================
+2026-06-12 13:59:24,294 [INFO] __main__: VLM Vision — Traceability Agent starting
+2026-06-12 13:59:24,294 [INFO] __main__: ============================================================
+2026-06-12 13:59:24,301 [INFO] local_agent.traceability.traceability_runtime: Traceability runtime configuration:
+2026-06-12 13:59:24,301 [INFO] local_agent.traceability.traceability_runtime:     traceability_db_path = data/traceability.db
+2026-06-12 13:59:24,302 [INFO] local_agent.traceability.traceability_runtime:     video_camera_ids = [0, 1]
+2026-06-12 13:59:24,302 [INFO] local_agent.traceability.traceability_runtime:     catalyst_project_id = 35344000000152001
+2026-06-12 13:59:24,302 [INFO] local_agent.traceability.traceability_runtime:     catalyst_function_base_url = https://YOUR_FUNCTION_BASE_URL/server/vlm_vision_function
+2026-06-12 13:59:24,303 [INFO] local_agent.traceability.traceability_runtime:     cloud_sync_interval_sec = 60.0
+2026-06-12 13:59:24,304 [INFO] local_agent.traceability.traceability_runtime:     catalyst_client_id = 1000...
+2026-06-12 13:59:24,304 [INFO] local_agent.traceability.traceability_runtime:     catalyst_client_secret = 735f...
+2026-06-12 13:59:24,305 [INFO] local_agent.traceability.traceability_runtime:     catalyst_refresh_token = 1000...
+2026-06-12 13:59:24,305 [INFO] local_agent.traceability.traceability_runtime:     is_cloud_configured = False
+2026-06-12 13:59:24,333 [INFO] local_agent.traceability.event_correlator: EventCorrelator initialized — zone 2, window 5.0s
+2026-06-12 13:59:24,339 [WARNING] local_agent.traceability.traceability_runtime: Cloud sync DISABLED -- cloud not fully configured (function URL still a placeholder or credentials missing). Running locally; clips are buffered and will upload once configured.
+2026-06-12 13:59:24,340 [INFO] local_agent.traceability.zone_manager: ZoneManager initialized with 5 zones
+2026-06-12 13:59:24,340 [INFO] local_agent.traceability.zone_manager:   Zone 1: packing — camera 2 — enabled
+2026-06-12 13:59:24,341 [INFO] local_agent.traceability.zone_manager:   Zone 2: barcode_scan — camera 3 — enabled
+2026-06-12 13:59:24,341 [INFO] local_agent.traceability.zone_manager:   Zone 3: sealing — camera 4 — enabled
+2026-06-12 13:59:24,342 [INFO] local_agent.traceability.zone_manager:   Zone 4: pallet_assembly — camera 5 — enabled
+2026-06-12 13:59:24,342 [INFO] local_agent.traceability.zone_manager:   Zone 5: truck_loading — camera 6 — enabled
+2026-06-12 13:59:24,342 [INFO] local_agent.traceability.pallet_tracker: PalletTracker initialized
+2026-06-12 13:59:24,344 [INFO] local_agent.traceability.evidence_generator: EvidenceGenerator initialized — requests dir: data/clip_requests
+2026-06-12 13:59:24,369 [INFO] __main__: Zone 1 camera thread started — camera_id=2
+2026-06-12 13:59:24,370 [INFO] __main__: Camera thread started for zone 1
+2026-06-12 13:59:24,374 [INFO] __main__: Zone 2 camera thread started — camera_id=3
+2026-06-12 13:59:24,374 [INFO] __main__: Camera thread started for zone 2
+2026-06-12 13:59:24,375 [INFO] __main__: Zone 3 camera thread started — camera_id=4
+2026-06-12 13:59:24,376 [INFO] __main__: Camera thread started for zone 3
+2026-06-12 13:59:24,377 [INFO] __main__: Zone 4 camera thread started — camera_id=5
+2026-06-12 13:59:24,377 [INFO] __main__: Camera thread started for zone 4
+2026-06-12 13:59:24,386 [INFO] __main__: Zone 5 camera thread started — camera_id=6
+2026-06-12 13:59:24,386 [INFO] __main__: Camera thread started for zone 5
+2026-06-12 13:59:24,389 [INFO] __main__: Frame processor started
+2026-06-12 13:59:24,390 [INFO] local_agent.traceability.barcode_reader: Scanner listener running — waiting for barcode scans...
+2026-06-12 13:59:24,391 [INFO] local_agent.traceability.barcode_reader: USB scanner listener started
+2026-06-12 13:59:24,392 [INFO] local_agent.traceability.traceability_runtime: Clip processor loop started (every 5s)
+2026-06-12 13:59:24,393 [INFO] __main__: Traceability Agent running — 5 zones active
+2026-06-12 13:59:24,393 [INFO] __main__: Press Ctrl+C to stop
+2026-06-12 13:59:24,755 [WARNING] __main__: Zone 1 camera 2 not available — retrying in 5.0s
+2026-06-12 13:59:24,764 [WARNING] __main__: Zone 2 camera 3 not available — retrying in 5.0s
+2026-06-12 13:59:24,777 [WARNING] __main__: Zone 5 camera 6 not available — retrying in 5.0s
+2026-06-12 13:59:24,790 [WARNING] __main__: Zone 4 camera 5 not available — retrying in 5.0s
+2026-06-12 13:59:24,800 [WARNING] __main__: Zone 3 camera 4 not available — retrying in 5.0s
+2026-06-12 13:59:29,974 [WARNING] __main__: Zone 2 camera 3 not available — retrying in 5.0s
+2026-06-12 13:59:29,982 [WARNING] __main__: Zone 1 camera 2 not available — retrying in 5.0s
+2026-06-12 13:59:30,007 [WARNING] __main__: Zone 4 camera 5 not available — retrying in 5.0s
+2026-06-12 13:59:30,015 [WARNING] __main__: Zone 3 camera 4 not available — retrying in 5.0s
+2026-06-12 13:59:30,015 [WARNING] __main__: Zone 5 camera 6 not available — retrying in 5.0s
+2026-06-12 13:59:34,412 [INFO] __main__: Heartbeat — pallets: 0 active / 0 completed — mismatches: 0 — stored events: 0, clips: 0
+2026-06-12 13:59:35,238 [WARNING] __main__: Zone 3 camera 4 not available — retrying in 5.0s
+2026-06-12 13:59:35,246 [WARNING] __main__: Zone 2 camera 3 not available — retrying in 5.0s
+2026-06-12 13:59:35,254 [WARNING] __main__: Zone 1 camera 2 not available — retrying in 5.0s
+2026-06-12 13:59:35,271 [WARNING] __main__: Zone 5 camera 6 not available — retrying in 5.0s
+2026-06-12 13:59:35,271 [WARNING] __main__: Zone 4 camera 5 not available — retrying in 5.0s
+2026-06-12 13:59:40,456 [WARNING] __main__: Zone 2 camera 3 not available — retrying in 5.0s
+2026-06-12 13:59:40,462 [WARNING] __main__: Zone 1 camera 2 not available — retrying in 5.0s
+2026-06-12 13:59:40,468 [WARNING] __main__: Zone 4 camera 5 not available — retrying in 5.0s
+2026-06-12 13:59:40,478 [WARNING] __main__: Zone 3 camera 4 not available — retrying in 5.0s
+2026-06-12 13:59:40,486 [WARNING] __main__: Zone 5 camera 6 not available — retrying in 5.0s
+2026-06-12 13:59:44,416 [INFO] __main__: Heartbeat — pallets: 0 active / 0 completed — mismatches: 0 — stored events: 0, clips: 0
+2026-06-12 13:59:45,669 [WARNING] __main__: Zone 2 camera 3 not available — retrying in 5.0s
+2026-06-12 13:59:45,679 [WARNING] __main__: Zone 3 camera 4 not available — retrying in 5.0s
+2026-06-12 13:59:45,691 [WARNING] __main__: Zone 1 camera 2 not available — retrying in 5.0s
+2026-06-12 13:59:45,701 [WARNING] __main__: Zone 5 camera 6 not available — retrying in 5.0s
+2026-06-12 13:59:45,710 [WARNING] __main__: Zone 4 camera 5 not available — retrying in 5.0s
+2026-06-12 13:59:50,893 [WARNING] __main__: Zone 2 camera 3 not available — retrying in 5.0s
+2026-06-12 13:59:50,901 [WARNING] __main__: Zone 5 camera 6 not available — retrying in 5.0s
+2026-06-12 13:59:50,912 [WARNING] __main__: Zone 1 camera 2 not available — retrying in 5.0s
+2026-06-12 13:59:50,924 [WARNING] __main__: Zone 3 camera 4 not available — retrying in 5.0s
+2026-06-12 13:59:50,935 [WARNING] __main__: Zone 4 camera 5 not available — retrying in 5.0s
+2026-06-12 13:59:54,420 [INFO] __main__: Heartbeat — pallets: 0 active / 0 completed — mismatches: 0 — stored events: 0, clips: 0
+2026-06-12 13:59:56,227 [WARNING] __main__: Zone 5 camera 6 not available — retrying in 5.0s
+2026-06-12 13:59:56,241 [WARNING] __main__: Zone 3 camera 4 not available — retrying in 5.0s
+2026-06-12 13:59:56,255 [WARNING] __main__: Zone 1 camera 2 not available — retrying in 5.0s
+2026-06-12 13:59:56,267 [WARNING] __main__: Zone 2 camera 3 not available — retrying in 5.0s
+2026-06-12 13:59:56,287 [WARNING] __main__: Zone 4 camera 5 not available — retrying in 5.0s
+2026-06-12 14:00:01,413 [WARNING] __main__: Zone 5 camera 6 not available — retrying in 5.0s
+2026-06-12 14:00:01,505 [WARNING] __main__: Zone 3 camera 4 not available — retrying in 5.0s
+2026-06-12 14:00:01,534 [WARNING] __main__: Zone 2 camera 3 not available — retrying in 5.0s
+2026-06-12 14:00:01,554 [WARNING] __main__: Zone 1 camera 2 not available — retrying in 5.0s
+2026-06-12 14:00:01,555 [WARNING] __main__: Zone 4 camera 5 not available — retrying in 5.0s
+2026-06-12 14:00:04,425 [INFO] __main__: Heartbeat — pallets: 0 active / 0 completed — mismatches: 0 — stored events: 0, clips: 0
+2026-06-12 14:00:06,526 [WARNING] __main__: Zone 5 camera 6 not available — retrying in 5.0s
+2026-06-12 14:00:06,676 [WARNING] __main__: Zone 2 camera 3 not available — retrying in 5.0s
+2026-06-12 14:00:06,685 [WARNING] __main__: Zone 1 camera 2 not available — retrying in 5.0s
+2026-06-12 14:00:06,697 [WARNING] __main__: Zone 3 camera 4 not available — retrying in 5.0s
+2026-06-12 14:00:06,706 [WARNING] __main__: Zone 4 camera 5 not available — retrying in 5.0s
+2026-06-12 14:00:11,657 [WARNING] __main__: Zone 5 camera 6 not available — retrying in 5.0s
+2026-06-12 14:00:11,920 [WARNING] __main__: Zone 3 camera 4 not available — retrying in 5.0s
+2026-06-12 14:00:11,934 [WARNING] __main__: Zone 2 camera 3 not available — retrying in 5.0s
+2026-06-12 14:00:11,944 [WARNING] __main__: Zone 1 camera 2 not available — retrying in 5.0s
+2026-06-12 14:00:11,954 [WARNING] __main__: Zone 4 camera 5 not available — retrying in 5.0s
+2026-06-12 14:00:14,430 [INFO] __main__: Heartbeat — pallets: 0 active / 0 completed — mismatches: 0 — stored events: 0, clips: 0
+2026-06-12 14:00:16,772 [WARNING] __main__: Zone 5 camera 6 not available — retrying in 5.0s
+2026-06-12 14:00:17,157 [WARNING] __main__: Zone 1 camera 2 not available — retrying in 5.0s
+2026-06-12 14:00:17,176 [WARNING] __main__: Zone 3 camera 4 not available — retrying in 5.0s
+2026-06-12 14:00:17,177 [WARNING] __main__: Zone 2 camera 3 not available — retrying in 5.0s
+2026-06-12 14:00:17,184 [WARNING] __main__: Zone 4 camera 5 not available — retrying in 5.0s
+2026-06-12 14:00:21,881 [WARNING] __main__: Zone 5 camera 6 not available — retrying in 5.0s
+2026-06-12 14:00:22,458 [WARNING] __main__: Zone 1 camera 2 not available — retrying in 5.0s
+2026-06-12 14:00:22,471 [WARNING] __main__: Zone 3 camera 4 not available — retrying in 5.0s
+2026-06-12 14:00:22,485 [WARNING] __main__: Zone 2 camera 3 not available — retrying in 5.0s
+2026-06-12 14:00:22,496 [WARNING] __main__: Zone 4 camera 5 not available — retrying in 5.0s
+2026-06-12 14:00:24,435 [INFO] __main__: Heartbeat — pallets: 0 active / 0 completed — mismatches: 0 — stored events: 0, clips: 0
+2026-06-12 14:00:26,988 [WARNING] __main__: Zone 5 camera 6 not available — retrying in 5.0s
+2026-06-12 14:00:27,685 [WARNING] __main__: Zone 1 camera 2 not available — retrying in 5.0s
+2026-06-12 14:00:27,693 [WARNING] __main__: Zone 3 camera 4 not available — retrying in 5.0s
+2026-06-12 14:00:27,703 [WARNING] __main__: Zone 2 camera 3 not available — retrying in 5.0s
+2026-06-12 14:00:27,711 [WARNING] __main__: Zone 4 camera 5 not available — retrying in 5.0s
+2026-06-12 14:00:32,162 [WARNING] __main__: Zone 5 camera 6 not available — retrying in 5.0s
+2026-06-12 14:00:33,040 [WARNING] __main__: Zone 1 camera 2 not available — retrying in 5.0s
+2026-06-12 14:00:33,058 [WARNING] __main__: Zone 2 camera 3 not available — retrying in 5.0s
+2026-06-12 14:00:33,077 [WARNING] __main__: Zone 3 camera 4 not available — retrying in 5.0s
+2026-06-12 14:00:33,077 [WARNING] __main__: Zone 4 camera 5 not available — retrying in 5.0s
+2026-06-12 14:00:34,441 [INFO] __main__: Heartbeat — pallets: 0 active / 0 completed — mismatches: 0 — stored events: 0, clips: 0
+2026-06-12 14:00:37,882 [WARNING] __main__: Zone 5 camera 6 not available — retrying in 5.0s
+2026-06-12 14:00:38,434 [WARNING] __main__: Zone 1 camera 2 not available — retrying in 5.0s
+2026-06-12 14:00:38,484 [WARNING] __main__: Zone 3 camera 4 not available — retrying in 5.0s
+2026-06-12 14:00:38,517 [WARNING] __main__: Zone 2 camera 3 not available — retrying in 5.0s
+2026-06-12 14:00:38,543 [WARNING] __main__: Zone 4 camera 5 not available — retrying in 5.0s
+2026-06-12 14:00:43,054 [WARNING] __main__: Zone 5 camera 6 not available — retrying in 5.0s
+2026-06-12 14:00:43,854 [WARNING] __main__: Zone 3 camera 4 not available — retrying in 5.0s
+2026-06-12 14:00:43,884 [WARNING] __main__: Zone 1 camera 2 not available — retrying in 5.0s
+2026-06-12 14:00:43,901 [WARNING] __main__: Zone 2 camera 3 not available — retrying in 5.0s
+2026-06-12 14:00:43,918 [WARNING] __main__: Zone 4 camera 5 not available — retrying in 5.0s
+2026-06-12 14:00:44,445 [INFO] __main__: Heartbeat — pallets: 0 active / 0 completed — mismatches: 0 — stored events: 0, clips: 0
+2026-06-12 14:00:45,078 [INFO] __main__: Shutdown signal received
+2026-06-12 14:00:45,079 [INFO] local_agent.traceability.barcode_reader: USB scanner listener stopped
+2026-06-12 14:00:45,081 [INFO] local_agent.traceability.traceability_runtime: Clip processor loop stopped
+2026-06-12 14:00:45,082 [INFO] local_agent.traceability.traceability_runtime: Traceability runtime stopped
+2026-06-12 14:00:45,082 [INFO] __main__: Traceability Agent stopped cleanly
+2026-06-12 14:04:07,063 [INFO] __main__: ============================================================
+2026-06-12 14:04:07,064 [INFO] __main__: VLM Vision - Traceability Agent starting
+2026-06-12 14:04:07,065 [INFO] __main__: ============================================================
+2026-06-12 14:04:07,080 [INFO] local_agent.traceability.traceability_runtime: Traceability runtime configuration:
+2026-06-12 14:04:07,081 [INFO] local_agent.traceability.traceability_runtime:     traceability_db_path = data/traceability.db
+2026-06-12 14:04:07,082 [INFO] local_agent.traceability.traceability_runtime:     video_camera_ids = [0, 1]
+2026-06-12 14:04:07,082 [INFO] local_agent.traceability.traceability_runtime:     catalyst_project_id = 35344000000152001
+2026-06-12 14:04:07,083 [INFO] local_agent.traceability.traceability_runtime:     catalyst_function_base_url = https://YOUR_FUNCTION_BASE_URL/server/vlm_vision_function
+2026-06-12 14:04:07,084 [INFO] local_agent.traceability.traceability_runtime:     cloud_sync_interval_sec = 60.0
+2026-06-12 14:04:07,084 [INFO] local_agent.traceability.traceability_runtime:     catalyst_client_id = 1000...
+2026-06-12 14:04:07,085 [INFO] local_agent.traceability.traceability_runtime:     catalyst_client_secret = 735f...
+2026-06-12 14:04:07,085 [INFO] local_agent.traceability.traceability_runtime:     catalyst_refresh_token = 1000...
+2026-06-12 14:04:07,086 [INFO] local_agent.traceability.traceability_runtime:     is_cloud_configured = False
+2026-06-12 14:04:07,096 [INFO] local_agent.traceability.event_correlator: EventCorrelator initialized â€” zone 2, window 5.0s
+2026-06-12 14:04:07,101 [WARNING] local_agent.traceability.traceability_runtime: Cloud sync DISABLED -- cloud not fully configured (function URL still a placeholder or credentials missing). Running locally; clips are buffered and will upload once configured.
+2026-06-12 14:04:07,102 [INFO] local_agent.traceability.zone_manager: ZoneManager initialized with 5 zones
+2026-06-12 14:04:07,103 [INFO] local_agent.traceability.zone_manager:   Zone 1: packing â€” camera 2 â€” enabled
+2026-06-12 14:04:07,104 [INFO] local_agent.traceability.zone_manager:   Zone 2: barcode_scan â€” camera 3 â€” enabled
+2026-06-12 14:04:07,105 [INFO] local_agent.traceability.zone_manager:   Zone 3: sealing â€” camera 4 â€” enabled
+2026-06-12 14:04:07,105 [INFO] local_agent.traceability.zone_manager:   Zone 4: pallet_assembly â€” camera 5 â€” enabled
+2026-06-12 14:04:07,106 [INFO] local_agent.traceability.zone_manager:   Zone 5: truck_loading â€” camera 6 â€” enabled
+2026-06-12 14:04:07,108 [INFO] local_agent.traceability.pallet_tracker: PalletTracker initialized
+2026-06-12 14:04:07,113 [INFO] local_agent.traceability.evidence_generator: EvidenceGenerator initialized â€” requests dir: data/clip_requests
+2026-06-12 14:04:07,114 [INFO] __main__: Alert pipeline wired: EventCorrelator -> EvidenceGenerator
+2026-06-12 14:04:07,117 [INFO] __main__: Zone 1 camera thread started - camera_id=2
+2026-06-12 14:04:07,118 [INFO] __main__: Camera thread started for zone 1
+2026-06-12 14:04:07,121 [INFO] __main__: Zone 2 camera thread started - camera_id=3
+2026-06-12 14:04:07,121 [INFO] __main__: Camera thread started for zone 2
+2026-06-12 14:04:07,131 [INFO] __main__: Zone 3 camera thread started - camera_id=4
+2026-06-12 14:04:07,131 [INFO] __main__: Camera thread started for zone 3
+2026-06-12 14:04:07,134 [INFO] __main__: Zone 4 camera thread started - camera_id=5
+2026-06-12 14:04:07,135 [INFO] __main__: Camera thread started for zone 4
+2026-06-12 14:04:07,137 [INFO] __main__: Zone 5 camera thread started - camera_id=6
+2026-06-12 14:04:07,137 [INFO] __main__: Camera thread started for zone 5
+2026-06-12 14:04:07,141 [INFO] __main__: Frame processor started
+2026-06-12 14:04:07,145 [INFO] local_agent.traceability.barcode_reader: Scanner listener running â€” waiting for barcode scans...
+2026-06-12 14:04:07,145 [INFO] local_agent.traceability.barcode_reader: USB scanner listener started
+2026-06-12 14:04:07,148 [INFO] local_agent.traceability.traceability_runtime: Clip processor loop started (every 5s)
+2026-06-12 14:04:07,149 [INFO] __main__: Traceability Agent running - 5 zones active
+2026-06-12 14:04:07,151 [INFO] __main__: Press Ctrl+C to stop
+2026-06-12 14:04:07,499 [WARNING] __main__: Zone 3 camera 4 not available - retrying in 5.0s
+2026-06-12 14:04:07,511 [WARNING] __main__: Zone 1 camera 2 not available - retrying in 5.0s
+2026-06-12 14:04:07,525 [WARNING] __main__: Zone 2 camera 3 not available - retrying in 5.0s
+2026-06-12 14:04:07,537 [WARNING] __main__: Zone 5 camera 6 not available - retrying in 5.0s
+2026-06-12 14:04:07,554 [WARNING] __main__: Zone 4 camera 5 not available - retrying in 5.0s
+2026-06-12 14:04:12,730 [WARNING] __main__: Zone 5 camera 6 not available - retrying in 5.0s
+2026-06-12 14:04:12,739 [WARNING] __main__: Zone 3 camera 4 not available - retrying in 5.0s
+2026-06-12 14:04:12,751 [WARNING] __main__: Zone 2 camera 3 not available - retrying in 5.0s
+2026-06-12 14:04:12,762 [WARNING] __main__: Zone 1 camera 2 not available - retrying in 5.0s
+2026-06-12 14:04:12,769 [WARNING] __main__: Zone 4 camera 5 not available - retrying in 5.0s
+2026-06-12 14:04:17,158 [INFO] __main__: Heartbeat - pallets: 0 active / 0 completed - mismatches: 0 - stored events: 0, clips: 0
+2026-06-12 14:04:18,007 [WARNING] __main__: Zone 3 camera 4 not available - retrying in 5.0s
+2026-06-12 14:04:18,018 [WARNING] __main__: Zone 1 camera 2 not available - retrying in 5.0s
+2026-06-12 14:04:18,031 [WARNING] __main__: Zone 5 camera 6 not available - retrying in 5.0s
+2026-06-12 14:04:18,046 [WARNING] __main__: Zone 2 camera 3 not available - retrying in 5.0s
+2026-06-12 14:04:18,062 [WARNING] __main__: Zone 4 camera 5 not available - retrying in 5.0s
+2026-06-12 14:04:24,288 [WARNING] __main__: Zone 5 camera 6 not available - retrying in 5.0s
+2026-06-12 14:04:24,355 [WARNING] __main__: Zone 3 camera 4 not available - retrying in 5.0s
+2026-06-12 14:04:24,385 [WARNING] __main__: Zone 1 camera 2 not available - retrying in 5.0s
+2026-06-12 14:04:24,409 [WARNING] __main__: Zone 2 camera 3 not available - retrying in 5.0s
+2026-06-12 14:04:24,454 [WARNING] __main__: Zone 4 camera 5 not available - retrying in 5.0s
+2026-06-12 14:04:27,163 [INFO] __main__: Heartbeat - pallets: 0 active / 0 completed - mismatches: 0 - stored events: 0, clips: 0
+2026-06-12 14:04:29,754 [WARNING] __main__: Zone 3 camera 4 not available - retrying in 5.0s
+2026-06-12 14:04:29,784 [WARNING] __main__: Zone 5 camera 6 not available - retrying in 5.0s
+2026-06-12 14:04:29,853 [WARNING] __main__: Zone 1 camera 2 not available - retrying in 5.0s
+2026-06-12 14:04:29,853 [WARNING] __main__: Zone 2 camera 3 not available - retrying in 5.0s
+2026-06-12 14:04:29,884 [WARNING] __main__: Zone 4 camera 5 not available - retrying in 5.0s
+2026-06-12 14:04:35,017 [WARNING] __main__: Zone 3 camera 4 not available - retrying in 5.0s
+2026-06-12 14:04:35,090 [WARNING] __main__: Zone 2 camera 3 not available - retrying in 5.0s
+2026-06-12 14:04:35,103 [WARNING] __main__: Zone 5 camera 6 not available - retrying in 5.0s
+2026-06-12 14:04:35,119 [WARNING] __main__: Zone 1 camera 2 not available - retrying in 5.0s
+2026-06-12 14:04:35,138 [WARNING] __main__: Zone 4 camera 5 not available - retrying in 5.0s
+2026-06-12 14:04:36,147 [INFO] __main__: Shutdown signal received
+2026-06-12 14:04:36,147 [INFO] local_agent.traceability.barcode_reader: USB scanner listener stopped
+2026-06-12 14:04:36,148 [INFO] local_agent.traceability.traceability_runtime: Clip processor loop stopped
+2026-06-12 14:04:36,148 [INFO] local_agent.traceability.traceability_runtime: Traceability runtime stopped
+2026-06-12 14:04:36,149 [INFO] __main__: Traceability Agent stopped cleanly
