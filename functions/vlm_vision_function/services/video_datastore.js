@@ -2,39 +2,84 @@
 /**
  * Catalyst Datastore operations for video_segments and evidence_clips tables.
  *
- * Table schemas (create in Catalyst console):
- *   video_segments: segment_id (text), camera_id (int), start_time (bigint),
- *                   end_time (bigint), duration (double), file_size (bigint),
- *                   cloud_url (text), expires_at (bigint)
+ * ACTUAL table schemas (verified in the Catalyst console):
+ *   video_segments: segment_id (varchar), camera_id (bigint), zone_id (bigint),
+ *                   start_time (datetime), end_time (datetime),
+ *                   cloud_url (text), uploaded (boolean), expires_at (date)
  *
- *   evidence_clips: clip_id (text), event_id (text), segment_id (text),
- *                   clip_start_sec (double), clip_end_sec (double),
- *                   cloud_url (text), generated_at (bigint),
- *                   retained_indefinitely (boolean)
+ *   evidence_clips: clip_id (varchar), event_id (fk), box_id (fk), pallet_id (fk),
+ *                   clip_start (datetime), clip_end (datetime),
+ *                   cloud_url (text), retained_indefinitely (boolean)
+ *
+ * NOTE: the local agent sends timestamps as POSIX epoch seconds (numbers).
+ * The datetime/date columns need real date strings, so we convert here.
  */
 
-// ── Video Segments ──────────────────────────────────────────────
+// ---- helpers -------------------------------------------------------------
+
+/** epoch seconds (number) -> "YYYY-MM-DD HH:MM:SS" for datetime columns */
+function toDateTime(epochSeconds) {
+  if (epochSeconds == null || epochSeconds === "") return null;
+  const n = Number(epochSeconds);
+  if (!isFinite(n)) return null;
+  const d = new Date(n * 1000);
+  const pad = (x) => String(x).padStart(2, "0");
+  return (
+    d.getUTCFullYear() +
+    "-" + pad(d.getUTCMonth() + 1) +
+    "-" + pad(d.getUTCDate()) +
+    " " + pad(d.getUTCHours()) +
+    ":" + pad(d.getUTCMinutes()) +
+    ":" + pad(d.getUTCSeconds())
+  );
+}
+
+/** epoch seconds (number) -> "YYYY-MM-DD" for date columns */
+function toDate(epochSeconds) {
+  if (epochSeconds == null || epochSeconds === "") return null;
+  const n = Number(epochSeconds);
+  if (!isFinite(n)) return null;
+  const d = new Date(n * 1000);
+  const pad = (x) => String(x).padStart(2, "0");
+  return (
+    d.getUTCFullYear() +
+    "-" + pad(d.getUTCMonth() + 1) +
+    "-" + pad(d.getUTCDate())
+  );
+}
+
+/** drop keys whose value is undefined/null so we never write phantom columns */
+function clean(obj) {
+  const out = {};
+  for (const [k, v] of Object.entries(obj)) {
+    if (v !== undefined && v !== null) out[k] = v;
+  }
+  return out;
+}
+
+// ---- Video Segments ------------------------------------------------------
 
 export async function insertVideoSegment(catalystApp, segment) {
   const table = catalystApp.datastore().table("video_segments");
-  return table.insertRow({
+  const row = clean({
     segment_id: segment.segment_id,
     camera_id: segment.camera_id,
-    start_time: segment.start_time,
-    end_time: segment.end_time,
-    duration: segment.duration,
-    file_size: segment.file_size,
+    zone_id: segment.zone_id,
+    start_time: toDateTime(segment.start_time),
+    end_time: toDateTime(segment.end_time),
     cloud_url: segment.cloud_url,
-    expires_at: segment.expires_at,
+    uploaded: segment.uploaded ?? true,
+    expires_at: toDate(segment.expires_at),
   });
+  return table.insertRow(row);
 }
 
 export async function getVideoSegments(catalystApp, { camera_id, start, end, limit = 50 } = {}) {
   const zcql = catalystApp.zcql();
   const conditions = [];
   if (camera_id != null) conditions.push(`camera_id = ${camera_id}`);
-  if (start) conditions.push(`start_time >= ${start}`);
-  if (end) conditions.push(`end_time <= ${end}`);
+  if (start) conditions.push(`start_time >= '${toDateTime(start)}'`);
+  if (end) conditions.push(`end_time <= '${toDateTime(end)}'`);
 
   const where = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
   const query = `SELECT * FROM video_segments ${where} ORDER BY start_time DESC LIMIT ${limit}`;
@@ -52,8 +97,9 @@ export async function getVideoSegmentById(catalystApp, segmentId) {
 
 export async function deleteExpiredSegments(catalystApp, now) {
   const zcql = catalystApp.zcql();
+  const cutoff = toDate(now);
   const rows = await zcql.executeZCQLQuery(
-    `SELECT ROWID, segment_id FROM video_segments WHERE expires_at > 0 AND expires_at < ${now}`
+    `SELECT ROWID, segment_id FROM video_segments WHERE expires_at < '${cutoff}'`
   );
   if (rows.length === 0) return { deleted: 0 };
 
@@ -65,20 +111,25 @@ export async function deleteExpiredSegments(catalystApp, now) {
   return { deleted: rowIds.length, segment_ids: rows.map((r) => r.video_segments.segment_id) };
 }
 
-// ── Evidence Clips ──────────────────────────────────────────────
+// ---- Evidence Clips ------------------------------------------------------
 
 export async function insertEvidenceClip(catalystApp, clip) {
   const table = catalystApp.datastore().table("evidence_clips");
-  return table.insertRow({
+  // Accept either clip_start/clip_end or the older clip_start_sec/clip_end_sec
+  // names from the agent, so both payload shapes work.
+  const start = clip.clip_start ?? clip.clip_start_sec;
+  const end = clip.clip_end ?? clip.clip_end_sec;
+  const row = clean({
     clip_id: clip.clip_id,
     event_id: clip.event_id,
-    segment_id: clip.segment_id,
-    clip_start_sec: clip.clip_start_sec,
-    clip_end_sec: clip.clip_end_sec,
+    box_id: clip.box_id,
+    pallet_id: clip.pallet_id,
+    clip_start: toDateTime(start),
+    clip_end: toDateTime(end),
     cloud_url: clip.cloud_url,
-    generated_at: clip.generated_at,
     retained_indefinitely: clip.retained_indefinitely ?? true,
   });
+  return table.insertRow(row);
 }
 
 export async function getEvidenceClipByEvent(catalystApp, eventId) {
@@ -92,7 +143,7 @@ export async function getEvidenceClipByEvent(catalystApp, eventId) {
 export async function getEvidenceClips(catalystApp, { limit = 50 } = {}) {
   const zcql = catalystApp.zcql();
   const rows = await zcql.executeZCQLQuery(
-    `SELECT * FROM evidence_clips ORDER BY generated_at DESC LIMIT ${limit}`
+    `SELECT * FROM evidence_clips ORDER BY clip_start DESC LIMIT ${limit}`
   );
   return rows.map((r) => r.evidence_clips);
 }
